@@ -4,72 +4,147 @@ using UnityEngine;
 
 public class GameManager : MonoBehaviour
 {
-    [Header("Metainformation")]
+    [System.Serializable]
+    public class AttackType
+    {
+        public Material _attackMaterial;
+        public float _attackSpeed;
+        public string _telegraphAnimationTrigger;
+    }
+
+    [Header("MetaInformation")]
     public GameObject _playerObject;
     public GameObject _bossObject;
-    public List<Material> _projectileMaterials;
     public GameObject _projectilePrefab;
     public Transform _bossRotationPivot;
 
     [Header("GameSettings")]
+    public List<AttackType> _attackTypes = new List<AttackType>();
     public float _attackCooldown = 2f;
     public float _bossMovementSpeed = 5f;
     public float _offsetFromPivot = 10f;
 
     private bool _gameActive = false;
     private float _attackTimer = 0f;
-    private float _currentAngle = 0f;
-    private Coroutine _lerpRoutineReference;
+    private float _currentOrbitAngle = 0f;
+    private bool _cooldownPeriod = true;
+    private const float _ATTACK_TO_MOVEMENT_COOLDOWN = 0.5f;
 
     private void Start()
     {
         _bossObject.transform.position = _bossRotationPivot.position - (Vector3.forward * _offsetFromPivot);
         _bossObject.transform.SetParent(_bossRotationPivot);
+        _bossObject.GetComponent<TrailRenderer>().enabled = true;
         _gameActive = true;
     }
 
     private void Update()
     {
-        if (_gameActive)
+        _bossObject.transform.LookAt(_playerObject.transform, Vector3.up);
+        if (!_gameActive)
+        {
+            return;
+        }
+
+        if (_cooldownPeriod)
         {
             _attackTimer += Time.deltaTime;
             if (_attackTimer >= _attackCooldown)
             {
                 _attackTimer -= _attackCooldown;
-                AttackPlayer();
+                _cooldownPeriod = false;
+                TelegraphAttack();
             }
         }
-        _bossObject.transform.LookAt(_playerObject.transform, Vector3.up);
+
     }
 
-    private void AttackPlayer()
+    private void TelegraphAttack()
     {
-        var projectile = Instantiate(_projectilePrefab, _bossObject.transform.position, Quaternion.identity);
-        projectile.GetComponent<Projectile>()._targetTransform = _playerObject.transform;
-        DecideNewAttackPosition();
-    }
+        var attackIndex = Random.Range(0, _attackTypes.Count);
+        var projectileSettings = _attackTypes[attackIndex];
 
-    private void DecideNewAttackPosition()
-    {
-        var newAngle = Random.Range(0f, 360f);
-        if (_lerpRoutineReference != null)
+        if (projectileSettings._telegraphAnimationTrigger != "")
         {
-            StopCoroutine(_lerpRoutineReference);
+            StartCoroutine(projectileSettings._telegraphAnimationTrigger, attackIndex);
         }
-
-        _lerpRoutineReference = StartCoroutine(LerpRoutine(newAngle));
+        else
+        {
+            _cooldownPeriod = true;
+            AttackPlayer(attackIndex);
+        }
     }
 
-    private IEnumerator LerpRoutine(float newAngle)
+    private void AttackPlayer(int attackIndex)
     {
-        var startAngle = _currentAngle;
+        var projectileSettings = _attackTypes[attackIndex];
+
+        // The projectile spawns with a small offset in forward direction so it does not spawn inside the boss
+        var projectileObject = Instantiate(_projectilePrefab, _bossObject.transform.position + _bossObject.transform.forward, Quaternion.identity);
+        var projectileComponent = projectileObject.GetComponent<Projectile>();
+
+        projectileComponent._targetTransform = _playerObject.transform;
+        projectileComponent._movementSpeed = projectileSettings._attackSpeed;
+        projectileComponent._mainMeshRenderer.material = projectileSettings._attackMaterial;
+
+        var newAngle = Random.Range(0f, 360f);
+        StartCoroutine(OrbitLerpRoutine(newAngle));
+    }
+
+    #region Animations/Movement
+    private IEnumerator OrbitLerpRoutine(float newAngle)
+    {
+        yield return new WaitForSeconds(_ATTACK_TO_MOVEMENT_COOLDOWN);
+        var startAngle = _currentOrbitAngle;
         var lerpTimer = 0f;
-        while (_currentAngle > newAngle + 0.005 || _currentAngle < newAngle - 0.005)
+        while (_currentOrbitAngle > newAngle + 0.005 || _currentOrbitAngle < newAngle - 0.005)
         {
-            _currentAngle = Mathf.Lerp(startAngle, newAngle, lerpTimer);
-            _bossRotationPivot.transform.rotation = Quaternion.AngleAxis(_currentAngle, Vector3.up);
+            _currentOrbitAngle = Mathf.Lerp(startAngle, newAngle, lerpTimer);
+            _bossRotationPivot.transform.rotation = Quaternion.AngleAxis(_currentOrbitAngle, Vector3.up);
             lerpTimer += Time.deltaTime * _bossMovementSpeed;
             yield return null;
         }
     }
+
+    private IEnumerator DoubleJumpAnimation(int attackIndex)
+    {
+        var lerpTimer = 0f;
+        var basePosition = _bossObject.transform.position;
+
+        // Rather hacky to say the animation lasts 4 seconds, but it coincides with two jumps at a speed of 5 :P
+        while (lerpTimer < 4f)
+        {
+            lerpTimer += Time.deltaTime * 5;
+            var pingPongLerp = Mathf.PingPong(lerpTimer, 1);
+            var newPosition = _bossObject.transform.position;
+            newPosition.y = Mathf.Lerp(basePosition.y, basePosition.y + 1, pingPongLerp);
+            _bossObject.transform.position = newPosition; 
+
+
+            yield return null;
+        }
+        _bossObject.transform.position = basePosition;
+
+        _cooldownPeriod = true;
+        AttackPlayer(attackIndex);
+    }
+
+    private IEnumerator SpinAnimation(int attackIndex)
+    {
+        var lerpTimer = 0f;
+        var currentAngle = 0f;
+        var forwardAxis = _bossObject.transform.forward;
+        while (currentAngle > 360 + 0.005 || currentAngle < 360 - 0.005)
+        {
+            currentAngle = Mathf.Lerp(0, 360, lerpTimer);
+            _bossObject.transform.localRotation = Quaternion.AngleAxis(currentAngle, forwardAxis);
+            lerpTimer += Time.deltaTime;
+            yield return null;
+        }
+        _bossObject.transform.localRotation = Quaternion.AngleAxis(0, forwardAxis);
+
+        _cooldownPeriod = true;
+        AttackPlayer(attackIndex);
+    }
+    #endregion
 }

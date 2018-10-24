@@ -10334,6 +10334,7 @@ GameObject:
   m_Component:
   - component: {fileID: 449098075}
   - component: {fileID: 449098076}
+  - component: {fileID: 449098077}
   m_Layer: 0
   m_Name: ContraBass
   m_TagString: Untagged
@@ -10456,6 +10457,18 @@ TrailRenderer:
   m_MinVertexDistance: 0.1
   m_Autodestruct: 0
   m_Emitting: 1
+--- !u!65 &449098077
+BoxCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 0}
+  m_GameObject: {fileID: 449098074}
+  m_Material: {fileID: 0}
+  m_IsTrigger: 1
+  m_Enabled: 1
+  serializedVersion: 2
+  m_Size: {x: 1.2380222, y: 2.701561, z: 0.5507817}
+  m_Center: {x: 0.027920425, y: 0.11995888, z: 0.19329965}
 --- !u!1 &466862932
 GameObject:
   m_ObjectHideFlags: 0
@@ -18169,7 +18182,7 @@ GameObject:
   - component: {fileID: 876154565}
   - component: {fileID: 876154564}
   m_Layer: 0
-  m_Name: RotationPivot
+  m_Name: OrbitPivot
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -18224,7 +18237,7 @@ Transform:
   m_PrefabInternal: {fileID: 0}
   m_GameObject: {fileID: 876154563}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -0.304, y: 4.317, z: 2.084}
+  m_LocalPosition: {x: -0.3, y: 4.25, z: 2.138}
   m_LocalScale: {x: 0.1, y: 0.1, z: 0.1}
   m_Children: []
   m_Father: {fileID: 0}
@@ -20887,11 +20900,20 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _playerObject: {fileID: 437314422}
   _bossObject: {fileID: 449098074}
-  _projectileMaterials: []
   _projectilePrefab: {fileID: 1247011670433890, guid: 61672abe7af4a7640ae7f4ea59ecdc18,
     type: 2}
   _bossRotationPivot: {fileID: 876154566}
-  _attackCooldown: 2
+  _attackTypes:
+  - _attackMaterial: {fileID: 2100000, guid: 254d791961b439a4f97297841d772837, type: 2}
+    _attackSpeed: 5
+    _telegraphAnimationTrigger: DoubleJumpAnimation
+  - _attackMaterial: {fileID: 2100000, guid: 95a3a79a72aa89f4dab8d6402dae9379, type: 2}
+    _attackSpeed: 1
+    _telegraphAnimationTrigger: 
+  - _attackMaterial: {fileID: 2100000, guid: 4ba046fb3753b604ab70d795aa96b0a8, type: 2}
+    _attackSpeed: 3
+    _telegraphAnimationTrigger: SpinAnimation
+  _attackCooldown: 5
   _bossMovementSpeed: 1
   _offsetFromPivot: 10
 --- !u!1 &989608172
@@ -32071,7 +32093,7 @@ Transform:
   m_PrefabInternal: {fileID: 0}
   m_GameObject: {fileID: 1490064432}
   m_LocalRotation: {x: -0.042552333, y: 0.6876101, z: 0.72370386, w: 0.04043009}
-  m_LocalPosition: {x: -0.03, y: 0.182, z: 0.214}
+  m_LocalPosition: {x: -0.03, y: 0.1775, z: 0.2138}
   m_LocalScale: {x: 0.05, y: 0.05, z: 0.01}
   m_Children: []
   m_Father: {fileID: 287334144}

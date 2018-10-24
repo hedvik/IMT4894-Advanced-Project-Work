@@ -7,6 +7,7 @@ public class Projectile : MonoBehaviour
     public float _rotationSpeed = 3;
     public float _movementSpeed = 1;
     public Transform _targetTransform;
+    public MeshRenderer _mainMeshRenderer;
     private Vector3 _rotationAxis;
 
     // Use this for initialization

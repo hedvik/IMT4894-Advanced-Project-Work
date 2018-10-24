@@ -213,3 +213,4 @@ MonoBehaviour:
   _rotationSpeed: 50
   _movementSpeed: 3
   _targetTransform: {fileID: 0}
+  _mainMeshRenderer: {fileID: 23374491872278718}
