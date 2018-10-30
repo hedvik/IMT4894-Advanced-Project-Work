@@ -208,8 +208,6 @@ public class GameManager : MonoBehaviour
 
         yield return new WaitForSeconds(3);
 
-        _stunned = false;
-        _cooldownPeriod = true;
 
         if(!_gameActive)
         {
@@ -221,6 +219,9 @@ public class GameManager : MonoBehaviour
             newPosition.y = _bossRotationPivot.position.y;
             _bossObject.transform.position = newPosition;
         }
+
+        _stunned = false;
+        _cooldownPeriod = true;
     }
     #endregion
 }

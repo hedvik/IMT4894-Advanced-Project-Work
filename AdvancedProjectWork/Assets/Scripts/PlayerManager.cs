@@ -64,19 +64,19 @@ public class PlayerManager : MonoBehaviour {
 
     private void Shoot()
     {
+        _batonLineRenderer.enabled = false;
+        _currentCharge = 0;
+        // Hacky way to quickly reset stuff :p
+        AddCharge(0);
+
+        // TODO: Play animation, sounds and stuff
+
         RaycastHit hit;
         if(Physics.Raycast(_pointerOrigin.position, _pointerOrigin.forward, out hit, _pointerLineLength))
         {
-            if(hit.collider.CompareTag("Boss"))
+            if (hit.collider.CompareTag("Boss"))
             {
-                _batonLineRenderer.enabled = false;
-                _currentCharge = 0;
                 _gameManager.TakeDamage(_shotDamage);
-
-                // Hacky way to quickly reset stuff :p
-                AddCharge(0);
-
-                // TODO: Play animation, sounds and stuff
             }
         }
     }
