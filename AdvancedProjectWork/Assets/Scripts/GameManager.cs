@@ -29,6 +29,7 @@ public class GameManager : MonoBehaviour
     public float _attackCooldown = 2f;
     public float _bossMovementSpeed = 5f;
     public float _offsetFromPivot = 10f;
+    public AnimationCurve _stunnedAnimationVelocity;
 
     [Header("Audio")]
     public AudioClip _gameStartAudio;
@@ -77,6 +78,7 @@ public class GameManager : MonoBehaviour
     public void TakeDamage(float damage)
     {
         _stunned = true;
+        _cooldownPeriod = false;
         StopAllCoroutines();
         StartCoroutine(TakeDamage());
     }
@@ -202,15 +204,22 @@ public class GameManager : MonoBehaviour
 
     private IEnumerator TakeDamage()
     {
-        _bossObject.transform.rotation.SetLookRotation(Vector3.up, Vector3.up);
+        _bossObject.transform.LookAt(Vector3.up * -1000, Vector3.up);
 
-        yield return new WaitForSeconds(2);
+        yield return new WaitForSeconds(3);
 
         _stunned = false;
+        _cooldownPeriod = true;
 
         if(!_gameActive)
         {
             StartGame();
+        }
+        else
+        {
+            var newPosition = _bossObject.transform.position;
+            newPosition.y = _bossRotationPivot.position.y;
+            _bossObject.transform.position = newPosition;
         }
     }
     #endregion
