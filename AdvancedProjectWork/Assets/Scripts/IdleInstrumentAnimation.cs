@@ -2,6 +2,14 @@
 using System.Collections.Generic;
 using UnityEngine;
 
+public static class Utilities
+{
+    public static float Remap(float xMin, float xMax, float yMin, float yMax, float value)
+    {
+        return Mathf.Lerp(yMin, yMax, Mathf.InverseLerp(xMin, xMax, value));
+    }
+}
+
 public class IdleInstrumentAnimation : MonoBehaviour
 {
     public float _speed = 5;
@@ -17,14 +25,9 @@ public class IdleInstrumentAnimation : MonoBehaviour
     {
         _timer += Time.deltaTime * _speed;
 
-        var remappedSineTimeScale = Remap(-1f, 1f, _minScale, _maxScale, Mathf.Sin(_timer));
-        var remappedSineTimeRotation = Remap(-1f, 1f, 0, 1, Mathf.Sin(_timer * 0.5f));
+        var remappedSineTimeScale = Utilities.Remap(-1f, 1f, _minScale, _maxScale, Mathf.Sin(_timer));
+        var remappedSineTimeRotation = Utilities.Remap(-1f, 1f, 0, 1, Mathf.Sin(_timer * 0.5f));
         transform.localScale = new Vector3(1, remappedSineTimeScale, 1);
         transform.localRotation = Quaternion.Lerp(Quaternion.AngleAxis(_minAngle, transform.forward), Quaternion.AngleAxis(_maxAngle, transform.forward), remappedSineTimeRotation);
-    }
-
-    float Remap(float xMin, float xMax, float yMin, float yMax, float value)
-    {
-        return Mathf.Lerp(yMin, yMax, Mathf.InverseLerp(xMin, xMax, value));
     }
 }
