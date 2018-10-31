@@ -5329,7 +5329,8 @@ GameObject:
   - component: {fileID: 273030979}
   - component: {fileID: 273030981}
   - component: {fileID: 273030980}
-  m_Layer: 0
+  - component: {fileID: 273030982}
+  m_Layer: 9
   m_Name: ground
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -5393,6 +5394,20 @@ MeshFilter:
     type: 3}
   m_PrefabInternal: {fileID: 0}
   m_GameObject: {fileID: 273030978}
+  m_Mesh: {fileID: 4301142, guid: 780fb730b245d784f8358350b3087411, type: 3}
+--- !u!64 &273030982
+MeshCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 0}
+  m_GameObject: {fileID: 273030978}
+  m_Material: {fileID: 0}
+  m_IsTrigger: 0
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Convex: 0
+  m_CookingOptions: 14
+  m_SkinWidth: 0.01
   m_Mesh: {fileID: 4301142, guid: 780fb730b245d784f8358350b3087411, type: 3}
 --- !u!1 &278882956
 GameObject:
@@ -10022,10 +10037,11 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _gameManager: {fileID: 988310031}
-  _batonChargeNeeded: 100
+  _maxBatonCharge: 100
   _batonRenderer: {fileID: 1228561705}
   _chargedAnimationSpeed: 5
   _pointerLineLength: 50
+  _shotDamage: 50
 --- !u!1 &440343818
 GameObject:
   m_ObjectHideFlags: 0
@@ -21295,6 +21311,39 @@ MonoBehaviour:
   _attackCooldown: 5
   _bossMovementSpeed: 1
   _offsetFromPivot: 10
+  _stunnedAnimationVelocity:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0.018780664
+      value: 0.81253076
+      inSlope: 0.7197408
+      outSlope: 0.7197408
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.517791
+    - serializedVersion: 3
+      time: 0.5832635
+      value: 1.0041013
+      inSlope: -0.046520177
+      outSlope: -0.046520177
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.31554985
+      outWeight: 0.34863827
+    - serializedVersion: 3
+      time: 1.0002977
+      value: -0.005706787
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.33333334
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
   _gameStartAudio: {fileID: 8300000, guid: a779ba309f333ad4180721989a92ab24, type: 3}
   _gameSoundtrack: {fileID: 8300000, guid: d936af3e1f3abf74e868306ae9e9e20f, type: 3}
 --- !u!82 &988310032
@@ -21308,7 +21357,7 @@ AudioSource:
   OutputAudioMixerGroup: {fileID: 0}
   m_audioClip: {fileID: 0}
   m_PlayOnAwake: 0
-  m_Volume: 0.5
+  m_Volume: 0.1
   m_Pitch: 1
   Loop: 0
   Mute: 0

@@ -43,16 +43,34 @@ public class GameManager : MonoBehaviour
     private bool _cooldownPeriod = true;
     private const float _ATTACK_TO_MOVEMENT_COOLDOWN = 0.5f;
     private bool _stunned = false;
+    private IdleInstrumentAnimation _bossIdleAnimation;
+    private const float _DEBUG_HEAD_SPEED = 100;
 
     private void Start()
     {
         _audioSource = GetComponent<AudioSource>();
         _eyesObject.SetActive(false);
+        _bossIdleAnimation = _bossObject.transform.GetChild(0).GetComponent<IdleInstrumentAnimation>();
     }
 
     private void Update()
     {
-        if(_stunned)
+        #region Debug
+        if (Input.GetKey(KeyCode.A))
+        {
+            _playerObject.transform.Rotate(Vector3.up, Time.deltaTime * -_DEBUG_HEAD_SPEED);
+        }
+        if (Input.GetKey(KeyCode.D))
+        {
+            _playerObject.transform.Rotate(Vector3.up, Time.deltaTime * _DEBUG_HEAD_SPEED);
+        }
+        if (Input.GetKey(KeyCode.P))
+        {
+            _playerObject.GetComponent<PlayerManager>().AddCharge(100);
+        }
+        #endregion
+
+        if (_stunned)
         {
             return;
         }
@@ -80,7 +98,7 @@ public class GameManager : MonoBehaviour
         _stunned = true;
         _cooldownPeriod = false;
         StopAllCoroutines();
-        StartCoroutine(TakeDamage());
+        StartCoroutine(TakeDamageAnimation());
     }
 
     private void StartGame()
@@ -130,7 +148,7 @@ public class GameManager : MonoBehaviour
         yield return new WaitForSeconds(_ATTACK_TO_MOVEMENT_COOLDOWN);
         var startAngle = _currentOrbitAngle;
         var lerpTimer = 0f;
-        while (_currentOrbitAngle > newAngle + 0.005 || _currentOrbitAngle < newAngle - 0.005)
+        while (lerpTimer < 1)
         {
             _currentOrbitAngle = Mathf.Lerp(startAngle, newAngle, lerpTimer);
             _bossRotationPivot.transform.rotation = Quaternion.AngleAxis(_currentOrbitAngle, Vector3.up);
@@ -164,15 +182,15 @@ public class GameManager : MonoBehaviour
     {
         var lerpTimer = 0f;
         var currentAngle = 0f;
-        var forwardAxis = _bossObject.transform.forward;
-        while (currentAngle > 360 + 0.005 || currentAngle < 360 - 0.005)
+        var upAxis = _bossObject.transform.up;
+        while (lerpTimer < 1)
         {
             currentAngle = Mathf.Lerp(0, 360, lerpTimer);
-            _bossObject.transform.localRotation = Quaternion.AngleAxis(currentAngle, forwardAxis);
+            _bossObject.transform.localRotation = Quaternion.AngleAxis(currentAngle, upAxis);
             lerpTimer += Time.deltaTime;
             yield return null;
         }
-        _bossObject.transform.localRotation = Quaternion.AngleAxis(0, forwardAxis);
+        _bossObject.transform.localRotation = Quaternion.AngleAxis(0, upAxis);
 
         _cooldownPeriod = true;
         AttackPlayer(attackIndex);
@@ -202,26 +220,58 @@ public class GameManager : MonoBehaviour
         _audioSource.Play();
     }
 
-    private IEnumerator TakeDamage()
+    private IEnumerator TakeDamageAnimation()
     {
+        // We need to find out what y position we want to fall to
+        // Layer 9 contains terrain
+        var positionToFallTowards = _bossObject.transform.position;
+        var layerBitMask = 1 << 9;
+        RaycastHit hit;
+        if(Physics.Raycast(_bossObject.transform.position, Vector3.down, out hit, 50, layerBitMask))
+        {
+            positionToFallTowards.y = hit.point.y + 0.75f;
+        }
+
+        // TODO: Tilt the boss slightly upwards, replace eye texture with a hurt one
+
+        // We want a small bounce at the start of the fall animation so we "start" at a later stage in the animation before falling using a sine wave
+        _bossIdleAnimation.enabled = false;
+        var basePosition = _bossObject.transform.position;
+        var offsetBasePosition = basePosition;
+        offsetBasePosition.y += 1;
+        // inverseLerp calculates the t parameter of the current position
+        var positionLerpTimer = Mathf.InverseLerp(positionToFallTowards.y, offsetBasePosition.y, basePosition.y);
+        while (Mathf.Sin(positionLerpTimer) > 0.0f)
+        {
+            _bossObject.transform.position = Vector3.Lerp(positionToFallTowards, offsetBasePosition, Mathf.Sin(positionLerpTimer));
+            positionLerpTimer += (Time.deltaTime * 4);
+            yield return null;
+        }
+
+        // As the boss faces down the position has to go down a bit as well so it looks like it is on the floor
+        // TODO, might interpolate rotation as well in the above while loop
         _bossObject.transform.LookAt(Vector3.up * -1000, Vector3.up);
+        _bossObject.transform.position += Vector3.down * 0.5f;
 
-        yield return new WaitForSeconds(3);
+        yield return new WaitForSeconds(2);
 
-
+        // TODO The boss should interpolate back to the base position in both of these cases
         if(!_gameActive)
         {
+            _bossObject.transform.position = basePosition;
             StartGame();
         }
         else
         {
-            var newPosition = _bossObject.transform.position;
+            // This is mostly to make sure the boss doesn't change height if the damage animation happens right as another height modifying animation was active
+            var newPosition = basePosition;
             newPosition.y = _bossRotationPivot.position.y;
             _bossObject.transform.position = newPosition;
         }
 
         _stunned = false;
         _cooldownPeriod = true;
+        _bossIdleAnimation.enabled = true;
     }
     #endregion
 }
