@@ -45,12 +45,16 @@ public class GameManager : MonoBehaviour
     private bool _stunned = false;
     private IdleInstrumentAnimation _bossIdleAnimation;
     private const float _DEBUG_HEAD_SPEED = 100;
+    private ParticleSystem _bossSmokeParticles;
+    private TrailRenderer _trainRenderer;
 
     private void Start()
     {
         _audioSource = GetComponent<AudioSource>();
         _eyesObject.SetActive(false);
         _bossIdleAnimation = _bossObject.transform.GetChild(0).GetComponent<IdleInstrumentAnimation>();
+        _bossSmokeParticles = _bossObject.transform.GetChild(2).GetComponent<ParticleSystem>();
+        _trainRenderer = _bossObject.GetComponent<TrailRenderer>();
     }
 
     private void Update()
@@ -213,7 +217,7 @@ public class GameManager : MonoBehaviour
 
         _bossObject.transform.position = targetPosition;
         _bossObject.transform.SetParent(_bossRotationPivot);
-        _bossObject.GetComponent<TrailRenderer>().enabled = true;
+        _trainRenderer.enabled = true;
         _gameActive = true;
         _audioSource.clip = _gameSoundtrack;
         _audioSource.loop = true;
@@ -249,14 +253,24 @@ public class GameManager : MonoBehaviour
         }
 
         // As the boss faces down the position has to go down a bit as well so it looks like it is on the floor
-        // TODO, might interpolate rotation as well in the above while loop
         _bossObject.transform.LookAt(Vector3.up * -1000, Vector3.up);
         _bossObject.transform.position += Vector3.down * 0.5f;
 
-        yield return new WaitForSeconds(2);
+        // Creates a small bit of wiggle after the fall
+        yield return new WaitForSeconds(1f);
+        _trainRenderer.enabled = false;
+        var oldIdleSpeed = _bossIdleAnimation._speed;
+        _bossIdleAnimation._speed *= 10;
+        _bossIdleAnimation.enabled = true;
+        yield return new WaitForSeconds(0.5f);
+        _bossIdleAnimation.enabled = false;
+        _bossIdleAnimation._speed = oldIdleSpeed;
+        yield return new WaitForSeconds(1.5f);
+        _bossSmokeParticles.Play();
+        // TODO: Play "poof" sound effect?
 
-        // TODO The boss should interpolate back to the base position in both of these cases
-        if(!_gameActive)
+
+        if (!_gameActive)
         {
             _bossObject.transform.position = basePosition;
             StartGame();
@@ -269,6 +283,7 @@ public class GameManager : MonoBehaviour
             _bossObject.transform.position = newPosition;
         }
 
+        _trainRenderer.enabled = true;
         _stunned = false;
         _cooldownPeriod = true;
         _bossIdleAnimation.enabled = true;
