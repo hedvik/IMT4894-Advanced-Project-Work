@@ -34,6 +34,7 @@ public class GameManager : MonoBehaviour
     [Header("Audio")]
     public AudioClip _gameStartAudio;
     public AudioClip _gameSoundtrack;
+    public AudioClip _poofSound;
     private AudioSource _audioSource;
 
 
@@ -46,7 +47,8 @@ public class GameManager : MonoBehaviour
     private IdleInstrumentAnimation _bossIdleAnimation;
     private const float _DEBUG_HEAD_SPEED = 100;
     private ParticleSystem _bossSmokeParticles;
-    private TrailRenderer _trainRenderer;
+    private ParticleSystem _bossSparkParticles;
+    private TrailRenderer _bossTrailRenderer;
 
     private void Start()
     {
@@ -54,7 +56,8 @@ public class GameManager : MonoBehaviour
         _eyesObject.SetActive(false);
         _bossIdleAnimation = _bossObject.transform.GetChild(0).GetComponent<IdleInstrumentAnimation>();
         _bossSmokeParticles = _bossObject.transform.GetChild(2).GetComponent<ParticleSystem>();
-        _trainRenderer = _bossObject.GetComponent<TrailRenderer>();
+        _bossSparkParticles = _bossObject.transform.GetChild(3).GetComponent<ParticleSystem>();
+        _bossTrailRenderer = _bossObject.GetComponent<TrailRenderer>();
     }
 
     private void Update()
@@ -101,6 +104,7 @@ public class GameManager : MonoBehaviour
     {
         _stunned = true;
         _cooldownPeriod = false;
+        _bossSparkParticles.Play();
         StopAllCoroutines();
         StartCoroutine(TakeDamageAnimation());
     }
@@ -217,7 +221,7 @@ public class GameManager : MonoBehaviour
 
         _bossObject.transform.position = targetPosition;
         _bossObject.transform.SetParent(_bossRotationPivot);
-        _trainRenderer.enabled = true;
+        _bossTrailRenderer.enabled = true;
         _gameActive = true;
         _audioSource.clip = _gameSoundtrack;
         _audioSource.loop = true;
@@ -258,7 +262,7 @@ public class GameManager : MonoBehaviour
 
         // Creates a small bit of wiggle after the fall
         yield return new WaitForSeconds(1f);
-        _trainRenderer.enabled = false;
+        _bossTrailRenderer.enabled = false;
         var oldIdleSpeed = _bossIdleAnimation._speed;
         _bossIdleAnimation._speed *= 10;
         _bossIdleAnimation.enabled = true;
@@ -267,7 +271,7 @@ public class GameManager : MonoBehaviour
         _bossIdleAnimation._speed = oldIdleSpeed;
         yield return new WaitForSeconds(1.5f);
         _bossSmokeParticles.Play();
-        // TODO: Play "poof" sound effect?
+        _audioSource.PlayOneShot(_poofSound, 0.75f);
 
 
         if (!_gameActive)
@@ -283,7 +287,7 @@ public class GameManager : MonoBehaviour
             _bossObject.transform.position = newPosition;
         }
 
-        _trainRenderer.enabled = true;
+        _bossTrailRenderer.enabled = true;
         _stunned = false;
         _cooldownPeriod = true;
         _bossIdleAnimation.enabled = true;

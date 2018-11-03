@@ -9,21 +9,24 @@ public class PlayerManager : MonoBehaviour {
     public float _chargedAnimationSpeed = 5f;
     public float _pointerLineLength = 50f;
     public float _shotDamage = 50f;
+    public float _shotAnimationNoise = 1f;
 
     private float _currentCharge = 0f;
 
     private float _chargedAnimationTimer = 0f;
     private LineRenderer _batonLineRenderer;
+    private LineRenderer _attackLineRenderer;
     private Transform _pointerOrigin;
 
     private void Start()
     {
         // Needed for runtime modification of emission colour
         _batonRenderer.material.EnableKeyword("_EMISSION");
-        _batonLineRenderer = _batonRenderer.transform.parent.parent.GetComponent<LineRenderer>();
+        _batonLineRenderer = _batonRenderer.transform.parent.parent.GetChild(0).GetComponent<LineRenderer>();
         _batonLineRenderer.enabled = true;
-        _pointerOrigin = _batonLineRenderer.transform.GetChild(0);
+        _pointerOrigin = _batonLineRenderer.transform;
         _currentCharge = _maxBatonCharge;
+        _attackLineRenderer = _batonRenderer.transform.parent.parent.GetChild(1).GetComponent<LineRenderer>();
     }
 
     private void Update()
@@ -69,7 +72,10 @@ public class PlayerManager : MonoBehaviour {
         // Hacky way to quickly reset stuff :p
         AddCharge(0);
 
-        // TODO: Play animation, sounds and stuff
+        // TODO: Play sounds and stuff
+        // The actual attack animation isn't exactly that appealing either. Might want to find some way to improve it
+
+        var attackEndPoint = _pointerOrigin.position + _pointerOrigin.forward * _pointerLineLength;
 
         RaycastHit hit;
         if(Physics.Raycast(_pointerOrigin.position, _pointerOrigin.forward, out hit, _pointerLineLength))
@@ -77,7 +83,29 @@ public class PlayerManager : MonoBehaviour {
             if (hit.collider.CompareTag("Boss"))
             {
                 _gameManager.TakeDamage(_shotDamage);
+                attackEndPoint = hit.point;
             }
         }
+
+        StartCoroutine(ShotAnimation(attackEndPoint));
+    }
+
+    IEnumerator ShotAnimation(Vector3 endPoint)
+    {
+        // Generating the lineRenderer positions for the attack
+        for (int i = 0; i < _attackLineRenderer.positionCount; i++)
+        {
+            var currentPosition = (i != 0) ? Vector3.Lerp(_pointerOrigin.position, endPoint, ((i + 1f) / _attackLineRenderer.positionCount)) : _pointerOrigin.position;
+            if (i != 0)
+            {
+                currentPosition += new Vector3(Random.Range(-_shotAnimationNoise, _shotAnimationNoise), Random.Range(-_shotAnimationNoise, _shotAnimationNoise), Random.Range(-_shotAnimationNoise, _shotAnimationNoise));
+            }
+            _attackLineRenderer.SetPosition(i, currentPosition);
+        }
+
+        _attackLineRenderer.enabled = true;
+        yield return new WaitForSeconds(0.25f);
+        _attackLineRenderer.enabled = false;
+
     }
 }
