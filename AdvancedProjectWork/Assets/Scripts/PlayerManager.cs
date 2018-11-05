@@ -17,6 +17,7 @@ public class PlayerManager : MonoBehaviour {
     private LineRenderer _batonLineRenderer;
     private LineRenderer _attackLineRenderer;
     private Transform _pointerOrigin;
+    private ParticleSystem _batonParticleSystem;
 
     private void Start()
     {
@@ -27,6 +28,7 @@ public class PlayerManager : MonoBehaviour {
         _pointerOrigin = _batonLineRenderer.transform;
         _currentCharge = _maxBatonCharge;
         _attackLineRenderer = _batonRenderer.transform.parent.parent.GetChild(1).GetComponent<LineRenderer>();
+        _batonParticleSystem = _pointerOrigin.transform.GetChild(0).GetComponent<ParticleSystem>();
     }
 
     private void Update()
@@ -104,6 +106,7 @@ public class PlayerManager : MonoBehaviour {
         }
 
         _attackLineRenderer.enabled = true;
+        _batonParticleSystem.Play();
         yield return new WaitForSeconds(0.25f);
         _attackLineRenderer.enabled = false;
 
