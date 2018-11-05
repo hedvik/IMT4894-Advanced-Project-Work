@@ -27,6 +27,9 @@ public class PlayerManager : MonoBehaviour {
         _pointerOrigin = _batonLineRenderer.transform;
         _currentCharge = _maxBatonCharge;
         _attackLineRenderer = _batonRenderer.transform.parent.parent.GetChild(1).GetComponent<LineRenderer>();
+
+        _batonLineRenderer.SetPosition(0, _pointerOrigin.InverseTransformPoint(_pointerOrigin.position));
+        _batonLineRenderer.SetPosition(1, _pointerOrigin.InverseTransformPoint(_pointerOrigin.position + _pointerOrigin.forward * _pointerLineLength));
     }
 
     private void Update()
@@ -44,9 +47,6 @@ public class PlayerManager : MonoBehaviour {
 
             // +1 is added to these calculations so the emission strength is a bit more noticeable
             _batonRenderer.material.SetColor("_EmissionColor", new Color(sineTimer, sineTimer, sineTimer, 1.0f) * (sineTimer+1));
-
-            _batonLineRenderer.SetPosition(0, _pointerOrigin.position);
-            _batonLineRenderer.SetPosition(1, _pointerOrigin.position + _pointerOrigin.forward * _pointerLineLength);
         }
     }
 
