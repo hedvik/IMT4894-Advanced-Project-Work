@@ -212,5 +212,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _rotationSpeed: 50
   _movementSpeed: 3
-  _targetTransform: {fileID: 0}
   _mainMeshRenderer: {fileID: 23374491872278718}
+  _destructionSpeed: 2.5
+  _damageValue: 0
+  _chargeValue: 10
+  _targetTransform: {fileID: 0}
