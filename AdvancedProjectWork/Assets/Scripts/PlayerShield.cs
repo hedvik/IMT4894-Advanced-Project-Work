@@ -22,6 +22,7 @@ public class PlayerShield : MonoBehaviour {
 
             _particleSystem.transform.position = other.transform.position;
             _particleSystem.Play();
+            _playerManager._audioSource.PlayOneShot(_playerManager._absorbSound);
         }
     }
 }

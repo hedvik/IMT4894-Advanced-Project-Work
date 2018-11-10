@@ -3,13 +3,18 @@ using System.Collections.Generic;
 using UnityEngine;
 
 public class PlayerManager : MonoBehaviour {
-    public GameManager _gameManager;
+    public BossManager _gameManager;
     public float _maxBatonCharge = 100f;
     public MeshRenderer _batonRenderer;
     public float _chargedAnimationSpeed = 5f;
     public float _pointerLineLength = 50f;
     public float _shotDamage = 50f;
     public float _shotAnimationNoise = 1f;
+
+    [Header("Audio")]
+    public AudioClip _attackSound;
+    public AudioClip _absorbSound;
+    [HideInInspector] public AudioSource _audioSource;
 
     private float _currentCharge = 0f;
 
@@ -28,6 +33,7 @@ public class PlayerManager : MonoBehaviour {
         _pointerOrigin = _batonLineRenderer.transform;
         _attackLineRenderer = _batonRenderer.transform.parent.parent.GetChild(1).GetComponent<LineRenderer>();
         _batonParticleSystem = _pointerOrigin.transform.GetChild(0).GetComponent<ParticleSystem>();
+        _audioSource = GetComponent<AudioSource>();
 
         _batonLineRenderer.SetPosition(0, _pointerOrigin.InverseTransformPoint(_pointerOrigin.position));
         _batonLineRenderer.SetPosition(1, _pointerOrigin.InverseTransformPoint(_pointerOrigin.position + _pointerOrigin.forward * _pointerLineLength));
@@ -74,9 +80,7 @@ public class PlayerManager : MonoBehaviour {
         _currentCharge = 0;
         // Hacky way to quickly reset stuff :p
         AddCharge(0);
-
-        // TODO: Play sounds and stuff
-        // The actual attack animation isn't exactly that appealing either. Might want to find some way to improve it
+        _audioSource.PlayOneShot(_attackSound);
 
         var attackEndPoint = _pointerOrigin.position + _pointerOrigin.forward * _pointerLineLength;
 
