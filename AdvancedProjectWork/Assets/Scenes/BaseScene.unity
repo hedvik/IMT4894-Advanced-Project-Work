@@ -10102,7 +10102,7 @@ AudioSource:
   OutputAudioMixerGroup: {fileID: 0}
   m_audioClip: {fileID: 0}
   m_PlayOnAwake: 0
-  m_Volume: 0.25
+  m_Volume: 0.2
   m_Pitch: 1
   Loop: 0
   Mute: 0
@@ -21759,19 +21759,22 @@ MonoBehaviour:
     _telegraphAnimationTrigger: DoubleJumpAnimation
     _attackDamage: 0
     _attackChargeAmount: 50
-    _telegraphAudio: {fileID: 0}
+    _telegraphAudio: {fileID: 8300000, guid: 2e363ba106f313e42ab57074cc461732, type: 3}
+    _audioScale: 0.75
   - _attackMaterial: {fileID: 2100000, guid: 95a3a79a72aa89f4dab8d6402dae9379, type: 2}
-    _attackSpeed: 1
+    _attackSpeed: 1.5
     _telegraphAnimationTrigger: 
     _attackDamage: 0
     _attackChargeAmount: 20
     _telegraphAudio: {fileID: 0}
+    _audioScale: 0
   - _attackMaterial: {fileID: 2100000, guid: 4ba046fb3753b604ab70d795aa96b0a8, type: 2}
     _attackSpeed: 3
     _telegraphAnimationTrigger: SpinAnimation
     _attackDamage: 0
     _attackChargeAmount: 40
-    _telegraphAudio: {fileID: 0}
+    _telegraphAudio: {fileID: 8300000, guid: e155607ccfd95644db554b1d7f78d9c7, type: 3}
+    _audioScale: 10
   _attackCooldown: 5
   _bossMovementSpeed: 1
   _offsetFromPivot: 10
@@ -21791,7 +21794,7 @@ AudioSource:
   OutputAudioMixerGroup: {fileID: 0}
   m_audioClip: {fileID: 0}
   m_PlayOnAwake: 0
-  m_Volume: 0.1
+  m_Volume: 0.075
   m_Pitch: 1
   Loop: 0
   Mute: 0

@@ -18,6 +18,7 @@ public class BossManager : MonoBehaviour
 
         [Header("Audio")]
         public AudioClip _telegraphAudio;
+        public float _audioScale;
     }
 
     [Header("MetaInformation")]
@@ -136,6 +137,11 @@ public class BossManager : MonoBehaviour
             _cooldownPeriod = true;
             AttackPlayer(attackIndex);
         }
+
+        if(projectileSettings._telegraphAudio != null)
+        {
+            _audioSource.PlayOneShot(projectileSettings._telegraphAudio, projectileSettings._audioScale);
+        }
     }
 
     private void AttackPlayer(int attackIndex)
@@ -253,7 +259,7 @@ public class BossManager : MonoBehaviour
         var basePosition = _bossObject.transform.position;
         var offsetBasePosition = basePosition;
         offsetBasePosition.y += 1;
-        // inverseLerp calculates the t parameter of the current position
+        // InverseLerp calculates the t parameter of the current position
         var positionLerpTimer = Mathf.InverseLerp(positionToFallTowards.y, offsetBasePosition.y, basePosition.y);
         while (Mathf.Sin(positionLerpTimer) > 0.0f)
         {
@@ -263,11 +269,11 @@ public class BossManager : MonoBehaviour
         }
 
         // As the boss faces down the position has to go down a bit as well so it looks like it is on the floor
-        _bossObject.transform.LookAt(Vector3.up * -1000, Vector3.up);
+        _bossObject.transform.LookAt(Vector3.down * 1000, Vector3.up);
         _bossObject.transform.position += Vector3.down * 0.5f;
         _audioSource.PlayOneShot(_impactSound);
 
-        // Creates a small bit of wiggle after the fall
+        // Creates a small bit of wiggle after the fall by modifying the idle animation temporarily
         yield return new WaitForSeconds(1f);
         _bossTrailRenderer.enabled = false;
         var oldIdleSpeed = _bossIdleAnimation._speed;
@@ -289,6 +295,7 @@ public class BossManager : MonoBehaviour
         else
         {
             // This is mostly to make sure the boss doesn't change height if the damage animation happens right as another height modifying animation was active
+            // basePosition is the stored position at the time of impact, hence switching it back to the height of the pivot as it is consistent
             var newPosition = basePosition;
             newPosition.y = _bossRotationPivot.position.y;
             _bossObject.transform.position = newPosition;
