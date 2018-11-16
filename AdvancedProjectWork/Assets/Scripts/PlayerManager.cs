@@ -1,9 +1,10 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using Valve.VR;
 
 public class PlayerManager : MonoBehaviour {
-    public BossManager _gameManager;
+    public BossManager _bossManager;
     public float _maxBatonCharge = 100f;
     public MeshRenderer _batonRenderer;
     public float _chargedAnimationSpeed = 5f;
@@ -16,6 +17,9 @@ public class PlayerManager : MonoBehaviour {
     public AudioClip _absorbSound;
     [HideInInspector] public AudioSource _audioSource;
 
+    [Header("VR")]
+    public SteamVR_Input_Sources _batonHand;
+
     private float _currentCharge = 0f;
 
     private float _chargedAnimationTimer = 0f;
@@ -23,8 +27,9 @@ public class PlayerManager : MonoBehaviour {
     private LineRenderer _attackLineRenderer;
     private Transform _pointerOrigin;
     private ParticleSystem _batonParticleSystem;
+    private const float _DEBUG_HEAD_SPEED = 100;
 
-    private void Start()
+    private void Awake()
     {
         // Needed for runtime modification of emission colour
         _batonRenderer.material.EnableKeyword("_EMISSION");
@@ -43,9 +48,26 @@ public class PlayerManager : MonoBehaviour {
 
     private void Update()
     {
-        if(_currentCharge >= _maxBatonCharge)
+        if (Input.GetKey(KeyCode.A))
         {
-            if (Input.GetKeyDown(KeyCode.S))
+            transform.Rotate(Vector3.up, Time.deltaTime * -_DEBUG_HEAD_SPEED);
+        }
+        if (Input.GetKey(KeyCode.D))
+        {
+            transform.Rotate(Vector3.up, Time.deltaTime * _DEBUG_HEAD_SPEED);
+        }
+        
+        #if UNITY_EDITOR
+        if (Input.GetKey(KeyCode.P) || SteamVR_Input._default.inActions.Teleport.GetStateDown(_batonHand))
+        {
+            AddCharge(100);
+        }
+        #endif
+
+
+        if (_currentCharge >= _maxBatonCharge)
+        {
+            if (Input.GetKeyDown(KeyCode.S) || SteamVR_Input._default.inActions.GrabPinch.GetStateDown(_batonHand))
             {
                 Shoot();
                 return;
@@ -89,7 +111,7 @@ public class PlayerManager : MonoBehaviour {
         {
             if (hit.collider.CompareTag("Boss"))
             {
-                _gameManager.TakeDamage(_shotDamage);
+                _bossManager.TakeDamage(_shotDamage);
                 attackEndPoint = hit.point;
             }
         }

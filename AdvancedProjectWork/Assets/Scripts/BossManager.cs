@@ -50,10 +50,10 @@ public class BossManager : MonoBehaviour
     private const float _ATTACK_TO_MOVEMENT_COOLDOWN = 0.5f;
     private bool _stunned = false;
     private IdleInstrumentAnimation _bossIdleAnimation;
-    private const float _DEBUG_HEAD_SPEED = 100;
     private ParticleSystem _bossSmokeParticles;
     private ParticleSystem _bossSparkParticles;
     private TrailRenderer _bossTrailRenderer;
+    private Transform _playerHead;
 
     private void Start()
     {
@@ -63,30 +63,16 @@ public class BossManager : MonoBehaviour
         _bossSmokeParticles = _bossObject.transform.GetChild(2).GetComponent<ParticleSystem>();
         _bossSparkParticles = _bossObject.transform.GetChild(3).GetComponent<ParticleSystem>();
         _bossTrailRenderer = _bossObject.GetComponent<TrailRenderer>();
+        _playerHead = _playerObject.GetComponentInChildren<Camera>().transform;
     }
 
     private void Update()
     {
-        #region Debug
-        if (Input.GetKey(KeyCode.A))
-        {
-            _playerObject.transform.Rotate(Vector3.up, Time.deltaTime * -_DEBUG_HEAD_SPEED);
-        }
-        if (Input.GetKey(KeyCode.D))
-        {
-            _playerObject.transform.Rotate(Vector3.up, Time.deltaTime * _DEBUG_HEAD_SPEED);
-        }
-        if (Input.GetKey(KeyCode.P))
-        {
-            _playerObject.GetComponent<PlayerManager>().AddCharge(100);
-        }
-        #endregion
-
         if (_stunned)
         {
             return;
         }
-        _bossObject.transform.LookAt(_playerObject.transform, Vector3.up);
+        _bossObject.transform.LookAt(_playerHead, Vector3.up);
         if (!_gameActive)
         {
             return;
@@ -154,7 +140,7 @@ public class BossManager : MonoBehaviour
         var projectileObject = Instantiate(_projectilePrefab, _bossObject.transform.position + _bossObject.transform.forward, Quaternion.identity);
         var projectileComponent = projectileObject.GetComponent<Projectile>();
 
-        projectileComponent._targetTransform = _playerObject.transform;
+        projectileComponent._targetTransform = _playerHead;
         projectileComponent._movementSpeed = projectileSettings._attackSpeed;
         projectileComponent._mainMeshRenderer.material = projectileSettings._attackMaterial;
 
