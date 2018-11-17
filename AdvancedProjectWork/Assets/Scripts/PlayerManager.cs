@@ -58,7 +58,7 @@ public class PlayerManager : MonoBehaviour {
         }
         
         #if UNITY_EDITOR
-        if (Input.GetKey(KeyCode.P) || SteamVR_Input._default.inActions.Teleport.GetStateDown(_batonHand))
+        if (Input.GetKey(KeyCode.P) || (SteamVR.active && SteamVR_Input._default.inActions.Teleport.GetStateDown(_batonHand)))
         {
             AddCharge(100);
         }
@@ -67,7 +67,7 @@ public class PlayerManager : MonoBehaviour {
 
         if (_currentCharge >= _maxBatonCharge)
         {
-            if (Input.GetKeyDown(KeyCode.S) || SteamVR_Input._default.inActions.GrabPinch.GetStateDown(_batonHand))
+            if (Input.GetKeyDown(KeyCode.S) || (SteamVR.active && SteamVR_Input._default.inActions.GrabPinch.GetStateDown(_batonHand)))
             {
                 Shoot();
                 return;

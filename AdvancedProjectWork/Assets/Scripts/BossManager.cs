@@ -42,6 +42,8 @@ public class BossManager : MonoBehaviour
     public AudioClip _throwSound;
     private AudioSource _audioSource;
 
+    [HideInInspector] public List<GameObject> _projectiles;
+    [HideInInspector] public Transform _playerHead;
 
     private bool _gameActive = false;
     private float _attackTimer = 0f;
@@ -53,7 +55,6 @@ public class BossManager : MonoBehaviour
     private ParticleSystem _bossSmokeParticles;
     private ParticleSystem _bossSparkParticles;
     private TrailRenderer _bossTrailRenderer;
-    private Transform _playerHead;
 
     private void Start()
     {
@@ -100,6 +101,12 @@ public class BossManager : MonoBehaviour
         StartCoroutine(TakeDamageAnimation());
     }
 
+    public void DestroyProjectile(GameObject projectile)
+    {
+        _projectiles.Remove(projectile);
+        Destroy(projectile);
+    }
+
     private void StartGame()
     {
         // Start Animations
@@ -143,6 +150,9 @@ public class BossManager : MonoBehaviour
         projectileComponent._targetTransform = _playerHead;
         projectileComponent._movementSpeed = projectileSettings._attackSpeed;
         projectileComponent._mainMeshRenderer.material = projectileSettings._attackMaterial;
+        projectileComponent._bossManager = this;
+
+        _projectiles.Add(projectileObject);
 
         var newAngle = Random.Range(0f, 360f);
         StartCoroutine(OrbitLerpRoutine(newAngle));

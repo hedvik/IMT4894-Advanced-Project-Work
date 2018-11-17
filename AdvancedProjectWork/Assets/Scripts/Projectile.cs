@@ -12,6 +12,7 @@ public class Projectile : MonoBehaviour
     [HideInInspector] public float _damageValue = 0f;
     [HideInInspector] public float _chargeValue = 10f;
     [HideInInspector] public Transform _targetTransform;
+    [HideInInspector] public BossManager _bossManager;
     private Vector3 _rotationAxis;
     private bool _translating;
 
@@ -48,6 +49,6 @@ public class Projectile : MonoBehaviour
             transform.localScale = Vector3.Lerp(baseScale, Vector3.zero, timer);
             yield return null;
         }
-        Destroy(gameObject);
+        _bossManager.DestroyProjectile(gameObject);
     }
 }
