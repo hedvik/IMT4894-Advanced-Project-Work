@@ -97,6 +97,14 @@ public class BossManager : MonoBehaviour
         StopAllCoroutines();
         StartCoroutine(TakeDamageAnimation());
         StartCoroutine(DisplayBossHealth());
+
+        // TODO: Transition phases at thresholds
+
+        // Budget phase transition. Phases should probably be defined somewhere
+        if (_bossHealth <= 50)
+        {
+            _bossVisuals.transform.GetChild(4).gameObject.SetActive(true);
+        }
     }
 
     public void DestroyProjectile(GameObject projectile)
