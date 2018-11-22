@@ -16502,6 +16502,10 @@ Prefab:
   m_Modification:
     m_TransformParent: {fileID: 718598411}
     m_Modifications:
+    - target: {fileID: 2300000, guid: 7c4182d832f31a14bad31d2082bd3a8c, type: 3}
+      propertyPath: m_Materials.Array.size
+      value: 4
+      objectReference: {fileID: 0}
     - target: {fileID: 400010, guid: 7c4182d832f31a14bad31d2082bd3a8c, type: 3}
       propertyPath: m_LocalPosition.x
       value: 0
@@ -16550,7 +16554,12 @@ Prefab:
       propertyPath: m_LocalScale.z
       value: 0.2
       objectReference: {fileID: 0}
-    m_RemovedComponents: []
+    - target: {fileID: 2300000, guid: 7c4182d832f31a14bad31d2082bd3a8c, type: 3}
+      propertyPath: m_Materials.Array.data[4]
+      value: 
+      objectReference: {fileID: 2100000, guid: ff742bb7a23124342b6b9e7dcb3446b8, type: 2}
+    m_RemovedComponents:
+    - {fileID: 11100000, guid: 7c4182d832f31a14bad31d2082bd3a8c, type: 3}
   m_SourcePrefab: {fileID: 100100000, guid: 7c4182d832f31a14bad31d2082bd3a8c, type: 3}
   m_IsPrefabAsset: 0
 --- !u!4 &720591661 stripped
@@ -22748,10 +22757,8 @@ MonoBehaviour:
   _bossRotationPivot: {fileID: 876154566}
   _eyesObject: {fileID: 171579055}
   _bossHealthBar: {fileID: 992237707}
-  _attackCooldown: 5
-  _bossMovementSpeed: 1
   _offsetFromPivot: 10
-  _bossHealth: 100
+  _bossHealth: 120
   _gameStartAudio: {fileID: 8300000, guid: a779ba309f333ad4180721989a92ab24, type: 3}
   _gameSoundtrack: {fileID: 8300000, guid: d936af3e1f3abf74e868306ae9e9e20f, type: 3}
   _poofSound: {fileID: 8300000, guid: c9a56c9d8ae10c547b06aead0a3834b9, type: 3}

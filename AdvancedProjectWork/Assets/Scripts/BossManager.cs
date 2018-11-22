@@ -14,8 +14,6 @@ public class BossManager : MonoBehaviour
     public Image _bossHealthBar;
 
     [Header("GameSettings")]
-    public float _attackCooldown = 2f;
-    public float _bossMovementSpeed = 5f;
     public float _offsetFromPivot = 10f;
     public float _bossHealth = 100f;
 
@@ -44,9 +42,11 @@ public class BossManager : MonoBehaviour
     private ParticleSystem _bossSmokeParticles;
     private ParticleSystem _bossSparkParticles;
     private TrailRenderer _bossTrailRenderer;
-    private List<BossAttack> _bossAttacks = new List<BossAttack>();
+    private List<BossPhase> _bossPhases = new List<BossPhase>();
+    private BossPhase _currentPhase;
     private GameObject _bossVisuals;
     private float _maxHealth;
+    private int _currentAttackOrderIndex = 0;
 
     private void Start()
     {
@@ -58,9 +58,10 @@ public class BossManager : MonoBehaviour
         _bossSparkParticles = _bossVisuals.transform.GetChild(3).GetComponent<ParticleSystem>();
         _bossTrailRenderer = _bossVisuals.GetComponent<TrailRenderer>();
         _playerHead = _playerObject.GetComponentInChildren<Camera>().transform;
-        _bossAttacks.AddRange(Resources.LoadAll<BossAttack>("Attacks"));
+        _bossPhases.AddRange(Resources.LoadAll<BossPhase>("Phases"));
         _bossHealthBar.transform.parent.localScale = Vector3.zero;
         _maxHealth = _bossHealth;
+        CheckForPhaseChange();
     }
 
     private void Update()
@@ -78,9 +79,9 @@ public class BossManager : MonoBehaviour
         if (_cooldownPeriod)
         {
             _attackTimer += Time.deltaTime;
-            if (_attackTimer >= _attackCooldown)
-            {
-                _attackTimer -= _attackCooldown;
+            if (_attackTimer >= _currentPhase._attackCooldown)
+            {                               
+                _attackTimer -= _currentPhase._attackCooldown;
                 _cooldownPeriod = false;
                 TelegraphAttack();
             }
@@ -98,13 +99,13 @@ public class BossManager : MonoBehaviour
         StartCoroutine(TakeDamageAnimation());
         StartCoroutine(DisplayBossHealth());
 
-        // TODO: Transition phases at thresholds
-
-        // Budget phase transition. Phases should probably be defined somewhere
-        if (_bossHealth <= 50)
-        {
-            _bossVisuals.transform.GetChild(4).gameObject.SetActive(true);
-        }
+        CheckForPhaseChange();
+        
+        //// Budget phase transition. Phases should probably be defined somewhere
+        //if (_bossHealth <= 50)
+        //{
+        //    _bossVisuals.transform.GetChild(4).gameObject.SetActive(true);
+        //}
     }
 
     public void DestroyProjectile(GameObject projectile)
@@ -124,29 +125,34 @@ public class BossManager : MonoBehaviour
 
     private void TelegraphAttack()
     {
-        var attackIndex = Random.Range(0, _bossAttacks.Count);
-        var projectileSettings = _bossAttacks[attackIndex];
-
-        if (projectileSettings._telegraphAnimationTrigger != "")
+        BossAttack newAttack; 
+        if (_currentPhase._randomAttackOrder)
         {
-            StartCoroutine(projectileSettings._telegraphAnimationTrigger, attackIndex);
+            newAttack = _currentPhase._bossAttacks[Random.Range(0, _currentPhase._bossAttacks.Count)];
+        }
+        else
+        {
+            newAttack = GetOrderedAttack();
+        }
+
+        if (newAttack._telegraphAnimationTrigger != "")
+        {
+            StartCoroutine(newAttack._telegraphAnimationTrigger, newAttack);
         }
         else
         {
             _cooldownPeriod = true;
-            AttackPlayer(attackIndex);
+            AttackPlayer(newAttack);
         }
 
-        if(projectileSettings._telegraphAudio != null)
+        if(newAttack._telegraphAudio != null)
         {
-            _audioSource.PlayOneShot(projectileSettings._telegraphAudio, projectileSettings._audioScale);
+            _audioSource.PlayOneShot(newAttack._telegraphAudio, newAttack._audioScale);
         }
     }
 
-    private void AttackPlayer(int attackIndex)
+    private void AttackPlayer(BossAttack attack)
     {
-        var projectileSettings = _bossAttacks[attackIndex];
-
         _audioSource.PlayOneShot(_throwSound);
 
         // The projectile spawns with a small offset in forward direction so it does not spawn inside the boss
@@ -154,14 +160,43 @@ public class BossManager : MonoBehaviour
         var projectileComponent = projectileObject.GetComponent<Projectile>();
 
         projectileComponent._targetTransform = _playerHead;
-        projectileComponent._movementSpeed = projectileSettings._attackSpeed;
-        projectileComponent._mainMeshRenderer.material = projectileSettings._attackMaterial;
+        projectileComponent._movementSpeed = attack._attackSpeed;
+        projectileComponent._mainMeshRenderer.material = attack._attackMaterial;
         projectileComponent._bossManager = this;
+        projectileComponent._chargeValue = attack._attackChargeAmount;
 
         _projectiles.Add(projectileObject);
 
-        var newAngle = Random.Range(0f, 360f);
-        StartCoroutine(OrbitLerpRoutine(newAngle));
+        if (_currentPhase._containsMovement)
+        {
+            var newAngle = Random.Range(0f, 360f);
+            StartCoroutine(OrbitLerpRoutine(newAngle));
+        }
+    }
+
+    private void CheckForPhaseChange()
+    {
+        foreach(var phase in _bossPhases)
+        {
+            if(phase.IsWithinPhaseThreshold(_bossHealth) && phase != _currentPhase)
+            {
+                _currentPhase = phase;
+                _currentAttackOrderIndex = 0;
+            }
+        }
+    }
+
+    private BossAttack GetOrderedAttack()
+    {
+        var index = _currentAttackOrderIndex;
+        _currentAttackOrderIndex++;
+
+        if(_currentAttackOrderIndex >= _currentPhase._attackOrder.Count)
+        {
+            _currentAttackOrderIndex = 0;
+        }
+
+        return _currentPhase._attackOrder[index];
     }
 
     #region Animations/Interpolations
@@ -174,12 +209,12 @@ public class BossManager : MonoBehaviour
         {
             _currentOrbitAngle = Mathf.Lerp(startAngle, newAngle, lerpTimer);
             _bossRotationPivot.transform.rotation = Quaternion.AngleAxis(_currentOrbitAngle, Vector3.up);
-            lerpTimer += Time.deltaTime * _bossMovementSpeed;
+            lerpTimer += Time.deltaTime * _currentPhase._movementSpeed;
             yield return null;
         }
     }
 
-    private IEnumerator DoubleJumpAnimation(int attackIndex)
+    private IEnumerator DoubleJumpAnimation(BossAttack attack)
     {
         var lerpTimer = 0f;
         var basePosition = _bossVisuals.transform.position;
@@ -197,10 +232,10 @@ public class BossManager : MonoBehaviour
         _bossVisuals.transform.position = basePosition;
 
         _cooldownPeriod = true;
-        AttackPlayer(attackIndex);
+        AttackPlayer(attack);
     }
 
-    private IEnumerator SpinAnimation(int attackIndex)
+    private IEnumerator SpinAnimation(BossAttack attack)
     {
         var lerpTimer = 0f;
         var currentAngle = 0f;
@@ -215,7 +250,7 @@ public class BossManager : MonoBehaviour
         _bossVisuals.transform.localRotation = Quaternion.AngleAxis(0, upAxis);
 
         _cooldownPeriod = true;
-        AttackPlayer(attackIndex);
+        AttackPlayer(attack);
     }
 
     private IEnumerator StartGameAnimation()
