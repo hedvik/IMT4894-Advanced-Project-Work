@@ -7,6 +7,7 @@ public class BossPhase : ScriptableObject {
     public float _attackCooldown = 5f;
     public bool _containsMovement;
     public float _movementSpeed = 1f;
+    public string _transitionFunctionName = "";
     public Vector2Int _healthThreshold;
     public List<BossAttack> _bossAttacks = new List<BossAttack>();
     public bool _randomAttackOrder;

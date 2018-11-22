@@ -16,6 +16,7 @@ public class BossManager : MonoBehaviour
     [Header("GameSettings")]
     public float _offsetFromPivot = 10f;
     public float _bossHealth = 100f;
+    public float _timeBetweenAttackAndMovement = 0.5f;
 
     [Header("Audio")]
     public AudioClip _gameStartAudio;
@@ -23,6 +24,7 @@ public class BossManager : MonoBehaviour
     public AudioClip _poofSound;
     public AudioClip _impactSound;
     public AudioClip _throwSound;
+    public AudioClip _phaseTransitionSound;
     private AudioSource _audioSource;
 
     [Header("UI")]
@@ -36,7 +38,6 @@ public class BossManager : MonoBehaviour
     private float _attackTimer = 0f;
     private float _currentOrbitAngle = 0f;
     private bool _cooldownPeriod = true;
-    private const float _ATTACK_TO_MOVEMENT_COOLDOWN = 0.5f;
     private bool _stunned = false;
     private IdleInstrumentAnimation _bossIdleAnimation;
     private ParticleSystem _bossSmokeParticles;
@@ -89,31 +90,6 @@ public class BossManager : MonoBehaviour
 
     }
 
-    public void TakeDamage(float damage)
-    {
-        _bossHealth = Mathf.Clamp(_bossHealth - damage, 0, _maxHealth);
-        _stunned = true;
-        _cooldownPeriod = false;
-        _bossSparkParticles.Play();
-        StopAllCoroutines();
-        StartCoroutine(TakeDamageAnimation());
-        StartCoroutine(DisplayBossHealth());
-
-        CheckForPhaseChange();
-        
-        //// Budget phase transition. Phases should probably be defined somewhere
-        //if (_bossHealth <= 50)
-        //{
-        //    _bossVisuals.transform.GetChild(4).gameObject.SetActive(true);
-        //}
-    }
-
-    public void DestroyProjectile(GameObject projectile)
-    {
-        _projectiles.Remove(projectile);
-        Destroy(projectile);
-    }
-
     private void StartGame()
     {
         // Start Animations
@@ -123,6 +99,45 @@ public class BossManager : MonoBehaviour
         StartCoroutine(StartGameAnimation());
     }
 
+    #region Damage/Phase Transition Logic
+    private bool CheckForPhaseChange()
+    {
+        foreach (var phase in _bossPhases)
+        {
+            if (phase.IsWithinPhaseThreshold(_bossHealth) && phase != _currentPhase)
+            {
+                _currentPhase = phase;
+                _currentAttackOrderIndex = 0;
+                if(_currentPhase._transitionFunctionName != "")
+                {
+                    var method = this.GetType().GetMethod(_currentPhase._transitionFunctionName);
+                    method?.Invoke(this, null);
+                }
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public void TakeDamage(float damage)
+    {
+        _bossHealth = Mathf.Clamp(_bossHealth - damage, 0, _maxHealth);
+        _stunned = true;
+        _cooldownPeriod = false;
+        _bossSparkParticles.Play();
+        StopAllCoroutines();
+        var hasPhaseChanged = CheckForPhaseChange();
+        StartCoroutine(TakeDamageAnimation(hasPhaseChanged));
+        StartCoroutine(DisplayBossHealth());
+    }
+
+    public void DestroyProjectile(GameObject projectile)
+    {
+        _projectiles.Remove(projectile);
+        Destroy(projectile);
+    }
+    #endregion
+    #region Attack Logic
     private void TelegraphAttack()
     {
         BossAttack newAttack; 
@@ -174,18 +189,6 @@ public class BossManager : MonoBehaviour
         }
     }
 
-    private void CheckForPhaseChange()
-    {
-        foreach(var phase in _bossPhases)
-        {
-            if(phase.IsWithinPhaseThreshold(_bossHealth) && phase != _currentPhase)
-            {
-                _currentPhase = phase;
-                _currentAttackOrderIndex = 0;
-            }
-        }
-    }
-
     private BossAttack GetOrderedAttack()
     {
         var index = _currentAttackOrderIndex;
@@ -198,11 +201,17 @@ public class BossManager : MonoBehaviour
 
         return _currentPhase._attackOrder[index];
     }
-
+    #endregion
+    #region Transition Functions
+    private void StartSweating()
+    {
+        _bossVisuals.transform.GetChild(4).gameObject.SetActive(true);
+    }
+    #endregion
     #region Animations/Interpolations
     private IEnumerator OrbitLerpRoutine(float newAngle)
     {
-        yield return new WaitForSeconds(_ATTACK_TO_MOVEMENT_COOLDOWN);
+        yield return new WaitForSeconds(_timeBetweenAttackAndMovement);
         var startAngle = _currentOrbitAngle;
         var lerpTimer = 0f;
         while (lerpTimer < 1)
@@ -277,7 +286,7 @@ public class BossManager : MonoBehaviour
         _audioSource.Play();
     }
 
-    private IEnumerator TakeDamageAnimation()
+    private IEnumerator TakeDamageAnimation(bool includesPhaseTransition)
     {
         // We need to find out what y position we want to fall to
         // Layer 9 contains terrain
@@ -340,8 +349,16 @@ public class BossManager : MonoBehaviour
 
         _bossTrailRenderer.enabled = true;
         _stunned = false;
-        _cooldownPeriod = true;
         _bossIdleAnimation.enabled = true;
+
+        if (includesPhaseTransition && _gameActive)
+        {
+            StartCoroutine(PhaseTransitionAnimation());
+        }
+        else
+        {
+            _cooldownPeriod = true;
+        }
     }
 
     private IEnumerator DisplayBossHealth()
@@ -359,6 +376,37 @@ public class BossManager : MonoBehaviour
         }
 
         _bossHealthBar.fillAmount = targetFill;
+    }
+
+    private IEnumerator PhaseTransitionAnimation()
+    {
+        var light = _bossContainer.GetComponentInChildren<Light>();
+        var baseLightColor = light.color;
+        var baseScale = _bossVisuals.transform.localScale;
+        var targetScale = baseScale * 2f;
+        var lerpTimer = 0f;
+        var cosTimer = 0f;
+        _audioSource.PlayOneShot(_phaseTransitionSound);
+        var smokeParticles = _bossVisuals.transform.GetChild(5).gameObject;
+        smokeParticles.SetActive(true);
+
+        while (lerpTimer <= _phaseTransitionSound.length)
+        {
+            yield return null;
+            lerpTimer += Time.deltaTime;
+            cosTimer += Time.deltaTime * 10f;
+
+            light.color = Color.Lerp(baseLightColor, Color.red, _healthBarScaleDuringDisplay.Evaluate(Utilities.Remap(0, _phaseTransitionSound.length, 0, 1, lerpTimer)));
+
+            // This way, cos(cosTimer) starts at -1 and gets remapped for a [0, 1] pingpong
+            _bossVisuals.transform.localScale = Vector3.Lerp(baseScale, targetScale, Utilities.Remap(-1, 1, 0, 1, Mathf.Cos(cosTimer) * -1));
+        }
+
+        light.color = baseLightColor;
+        _bossVisuals.transform.localScale = baseScale;
+        smokeParticles.SetActive(false);
+
+        _cooldownPeriod = true;
     }
     #endregion
 }
