@@ -10396,7 +10396,7 @@ GameObject:
   - component: {fileID: 437314427}
   - component: {fileID: 437314426}
   m_Layer: 0
-  m_Name: PlayerHead
+  m_Name: DebugPlayerHead
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0

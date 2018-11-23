@@ -2,11 +2,11 @@
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
+using Valve.VR;
 
 public class BossManager : MonoBehaviour
 {
     [Header("MetaInformation")]
-    public GameObject _playerObject;
     public GameObject _bossContainer;
     public GameObject _projectilePrefab;
     public Transform _bossRotationPivot;
@@ -34,6 +34,7 @@ public class BossManager : MonoBehaviour
     [HideInInspector] public List<GameObject> _projectiles;
     [HideInInspector] public Transform _playerHead;
 
+    private GameObject _playerObject;
     private bool _gameActive = false;
     private float _attackTimer = 0f;
     private float _currentOrbitAngle = 0f;
@@ -51,6 +52,15 @@ public class BossManager : MonoBehaviour
 
     private void Start()
     {
+        if (SteamVR.active)
+        {
+            _playerObject = GameObject.Find("[CameraRig]");
+        }
+        else
+        {
+            _playerObject = GameObject.Find("DebugPlayerHead");
+        }
+
         _bossVisuals = _bossContainer.transform.GetChild(0).gameObject;
         _audioSource = GetComponent<AudioSource>();
         _eyesObject.SetActive(false);
@@ -62,6 +72,7 @@ public class BossManager : MonoBehaviour
         _bossPhases.AddRange(Resources.LoadAll<BossPhase>("Phases"));
         _bossHealthBar.transform.parent.localScale = Vector3.zero;
         _maxHealth = _bossHealth;
+
         CheckForPhaseChange();
     }
 
@@ -97,6 +108,12 @@ public class BossManager : MonoBehaviour
         _eyesObject.SetActive(true);
 
         StartCoroutine(StartGameAnimation());
+    }
+
+    private void FindNewPivotAngle()
+    {
+        var newAngle = Random.Range(0f, 360f);
+        StartCoroutine(OrbitLerpRoutine(newAngle));
     }
 
     #region Damage/Phase Transition Logic
@@ -407,6 +424,12 @@ public class BossManager : MonoBehaviour
         smokeParticles.SetActive(false);
 
         _cooldownPeriod = true;
+
+        // It is kind of weird if the boss just stands still for a few seconds once the transition is done so it starts moving after this
+        if (_currentPhase._containsMovement)
+        {
+            FindNewPivotAngle();
+        }
     }
     #endregion
 }
