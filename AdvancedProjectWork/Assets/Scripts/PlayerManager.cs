@@ -1,6 +1,7 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Rendering.PostProcessing;
 using Valve.VR;
 
 public class PlayerManager : MonoBehaviour {
@@ -11,10 +12,12 @@ public class PlayerManager : MonoBehaviour {
     public float _pointerLineLength = 50f;
     public float _shotDamage = 50f;
     public float _shotAnimationNoise = 1f;
+    public float _takeDamageAnimationSpeed = 5f;
 
     [Header("Audio")]
     public AudioClip _attackSound;
     public AudioClip _absorbSound;
+    public AudioClip _takeDamageSound;
     [HideInInspector] public AudioSource _audioSource;
 
     [Header("VR")]
@@ -28,6 +31,10 @@ public class PlayerManager : MonoBehaviour {
     private Transform _pointerOrigin;
     private ParticleSystem _batonParticleSystem;
     private const float _DEBUG_HEAD_SPEED = 100;
+    private Vignette _vignette;
+    private Coroutine _takeDamageRoutine;
+    private int _numDamageTaken = 0;
+
 
     private void Awake()
     {
@@ -42,6 +49,8 @@ public class PlayerManager : MonoBehaviour {
 
         _batonLineRenderer.SetPosition(0, _pointerOrigin.InverseTransformPoint(_pointerOrigin.position));
         _batonLineRenderer.SetPosition(1, _pointerOrigin.InverseTransformPoint(_pointerOrigin.position + _pointerOrigin.forward * _pointerLineLength));
+
+        _vignette = GameObject.Find("PostProcessing").GetComponent<PostProcessVolume>().profile.GetSetting<Vignette>();
 
         AddCharge(_maxBatonCharge);
     }
@@ -97,6 +106,16 @@ public class PlayerManager : MonoBehaviour {
         }
     }
 
+    public void TakeDamage()
+    {
+        _numDamageTaken++;
+        if(_takeDamageRoutine != null)
+        {
+            StopCoroutine(_takeDamageRoutine);
+        }
+        _takeDamageRoutine = StartCoroutine(TakeDamageAnimation());
+    }
+
     private void Shoot()
     {
         _batonLineRenderer.enabled = false;
@@ -120,7 +139,7 @@ public class PlayerManager : MonoBehaviour {
         StartCoroutine(ShotAnimation(attackEndPoint));
     }
 
-    IEnumerator ShotAnimation(Vector3 endPoint)
+    private IEnumerator ShotAnimation(Vector3 endPoint)
     {
         // Generating the lineRenderer positions for the attack
         for (int i = 0; i < _attackLineRenderer.positionCount; i++)
@@ -137,6 +156,18 @@ public class PlayerManager : MonoBehaviour {
         _batonParticleSystem.Play();
         yield return new WaitForSeconds(0.25f);
         _attackLineRenderer.enabled = false;
+    }
 
+    private IEnumerator TakeDamageAnimation()
+    {
+        var lerpTimer = 0f;
+        while(Mathf.Sin(lerpTimer) >= 0f)
+        {
+            yield return null;
+            lerpTimer += Time.deltaTime * _takeDamageAnimationSpeed;
+            _vignette.intensity.value = Mathf.Lerp(0f, 0.5f, Mathf.Clamp(Mathf.Sin(lerpTimer), 0, 1));
+        }
+
+        _vignette.intensity.value = 0f;
     }
 }
