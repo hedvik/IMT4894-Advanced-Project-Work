@@ -1,5 +1,7 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
+using System.IO;
+using System.Linq;
 using System.Reflection;
 using UnityEngine;
 using UnityEngine.UI;
@@ -8,6 +10,7 @@ using Valve.VR;
 public class BossManager : MonoBehaviour
 {
     public int _experimentID = 0;
+    public string _dataFileName = "experimentData.csv";
     [Header("MetaInformation")]
     public GameObject _bossContainer;
     public GameObject _projectilePrefab;
@@ -63,6 +66,7 @@ public class BossManager : MonoBehaviour
     private UIManager _uiManager;
     private GorillaManager _gorillaManager;
     private int _participantID;
+    private List<int> _previousScores = new List<int>();
 
     private void Start()
     {
@@ -131,6 +135,23 @@ public class BossManager : MonoBehaviour
     {
         var newAngle = Random.Range(0f, 360f);
         StartCoroutine(OrbitLerpRoutine(newAngle));
+    }
+
+    private int FindScorePlacement(int newScore)
+    {
+        var sortedList = new List<int>(_previousScores);
+        sortedList.Add(newScore);
+        sortedList.Sort();
+        sortedList.Reverse();
+
+        for(int i = 0; i < sortedList.Count; i++)
+        {
+            if(sortedList[i] == newScore)
+            {
+                return i+1;
+            }
+        }
+        return 1;
     }
 
     #region Damage/Phase Transition Logic
@@ -519,10 +540,9 @@ public class BossManager : MonoBehaviour
         _audioSource.PlayOneShot(_fanfareSound);
         var intTimeTakenToWin = (int)_timeTakenToWin;
         var fullScore = Mathf.Clamp(_maxScore - (intTimeTakenToWin) - (_amountOfPlayerHits * _scoreDecreasePerHit), 0, _maxScore);
-        // TODO: This needs updating. The four extra variables can be calculated before write as we already have read this earlier
-        _uiManager.DisplayScore(intTimeTakenToWin, _amountOfPlayerHits, fullScore, 0, 0, 0, 0);
+        _uiManager.DisplayScore(intTimeTakenToWin, _amountOfPlayerHits, fullScore, _participantID, _experimentID, FindScorePlacement(fullScore), _previousScores.Count + 1);
         StartCoroutine(OrbitLerpRoutine(0f));
-        AppendScoreToFile(intTimeTakenToWin, fullScore);
+        AppendScoreToFile(fullScore);
     }
 
     private void Explode()
@@ -532,19 +552,80 @@ public class BossManager : MonoBehaviour
     }
     #endregion
     #region Data Collection
-    private void AppendScoreToFile(int timeTaken, int score)
+    private void AppendScoreToFile(int score)
     {
-        // TODO: Write Me!
-        // TODO: ID is unique and incrementing while a 2nd column has experiment ID
-        // Tell UIManager to Display ID and Condition/Experiment ID
-        // Append results to file
+        if (File.Exists(Application.dataPath + "/" + _dataFileName))
+        {
+            // Append
+            using (var writer = File.AppendText(Application.dataPath + "/" + _dataFileName))
+            {
+                var column1 = _participantID.ToString();
+                var column2 = _experimentID.ToString();
+                var column3 = ((int)_timeTakenToWin).ToString();
+                var column4 = _amountOfPlayerHits.ToString();
+                var column5 = score.ToString();
+                var line = string.Format("{0},{1},{2},{3},{4}", column1, column2, column3, column4, column5);
+                writer.WriteLine(line);
+                writer.Flush();
+            }
+        }
+        else
+        {
+            // Write
+            using (var writer = new StreamWriter(Application.dataPath + "/" + _dataFileName))
+            {
+                var column1 = "ParticipantID";
+                var column2 = "ExperimentID";
+                var column3 = "TimeTaken";
+                var column4 = "HitsTaken";
+                var column5 = "Score";
+                var line = string.Format("{0},{1},{2},{3},{4}", column1, column2, column3, column4, column5);
+                writer.WriteLine(line);
+                writer.Flush();
+
+                column1 = _participantID.ToString();
+                column2 = _experimentID.ToString();
+                column3 = ((int)_timeTakenToWin).ToString();
+                column4 = _amountOfPlayerHits.ToString();
+                column5 = score.ToString();
+                line = string.Format("{0},{1},{2},{3},{4}", column1, column2, column3, column4, column5);
+                writer.WriteLine(line);
+                writer.Flush();
+            }
+        }
     }
 
     private void FindCurrentID()
     {
-        // Read File, find latest id. Current id = latest id++
-        // This should be done on startup!
-        // Read/Write using https://docs.unity3d.com/ScriptReference/Application-dataPath.html
+        if (!File.Exists(Application.dataPath + "/" + _dataFileName))
+        {
+            _participantID = 0;
+            return;
+        }
+        using (var reader = new StreamReader(Application.dataPath + "/" + _dataFileName))
+        {
+            var list1 = new List<string>();
+            var list2 = new List<string>();
+            var list3 = new List<string>();
+            var list4 = new List<string>();
+            var list5 = new List<string>();
+            reader.ReadLine();
+
+            while (!reader.EndOfStream)
+            {
+                var line = reader.ReadLine();
+                var values = line.Split(',');
+
+                list1.Add(values[0]);
+                list2.Add(values[1]);
+                list3.Add(values[2]);
+                list4.Add(values[3]);
+                list5.Add(values[4]);
+            }
+
+            _participantID = int.Parse(list1[list1.Count - 1]) + 1;
+            _previousScores = list5.Select(int.Parse).ToList();
+        }
     }
     #endregion
 }
