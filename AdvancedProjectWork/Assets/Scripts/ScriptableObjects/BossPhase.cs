@@ -12,7 +12,7 @@ public class BossPhase : ScriptableObject {
     public List<BossAttack> _bossAttacks = new List<BossAttack>();
     public bool _randomAttackOrder;
 
-    // REFACTOR: Feels a bit redundant with _bossAttacks present, but it works for now
+    // COULD REFACTOR: Feels a bit redundant with _bossAttacks present, but it works for now
     public List<BossAttack> _attackOrder = new List<BossAttack>();
 
     public bool IsWithinPhaseThreshold(float healthValue)

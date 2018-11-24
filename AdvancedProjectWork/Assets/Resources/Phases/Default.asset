@@ -14,7 +14,8 @@ MonoBehaviour:
   _attackCooldown: 5
   _containsMovement: 1
   _movementSpeed: 1
-  _healthThreshold: {x: 0, y: 80}
+  _transitionFunctionName: 
+  _healthThreshold: {x: 41, y: 80}
   _bossAttacks:
   - {fileID: 11400000, guid: 5ed34cab26ac85543a24b684e03a7400, type: 2}
   - {fileID: 11400000, guid: 39ac9e538451f1e4e8337b6e818429f6, type: 2}

@@ -1,5 +1,6 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
+using System.Reflection;
 using UnityEngine;
 using UnityEngine.UI;
 using Valve.VR;
@@ -12,11 +13,14 @@ public class BossManager : MonoBehaviour
     public Transform _bossRotationPivot;
     public GameObject _eyesObject;
     public Image _bossHealthBar;
+    public Material _happyEyesMaterial;
 
     [Header("GameSettings")]
     public float _offsetFromPivot = 10f;
     public float _bossHealth = 100f;
     public float _timeBetweenAttackAndMovement = 0.5f;
+    public int _scoreDecreasePerHit = 50;
+    public int _maxScore = 1000;
 
     [Header("Audio")]
     public AudioClip _gameStartAudio;
@@ -25,6 +29,7 @@ public class BossManager : MonoBehaviour
     public AudioClip _impactSound;
     public AudioClip _throwSound;
     public AudioClip _phaseTransitionSound;
+    public AudioClip _explosionSound;
     private AudioSource _audioSource;
 
     [Header("UI")]
@@ -33,6 +38,8 @@ public class BossManager : MonoBehaviour
 
     [HideInInspector] public List<GameObject> _projectiles;
     [HideInInspector] public Transform _playerHead;
+    [HideInInspector] public float _timeTakenToWin = 0f;
+    [HideInInspector] public int _amountOfPlayerHits = 0;
 
     private GameObject _playerObject;
     private bool _gameActive = false;
@@ -49,6 +56,8 @@ public class BossManager : MonoBehaviour
     private GameObject _bossVisuals;
     private float _maxHealth;
     private int _currentAttackOrderIndex = 0;
+    private ParticleSystem _explosionParticles;
+    private UIManager _uiManager;
 
     private void Start()
     {
@@ -72,6 +81,8 @@ public class BossManager : MonoBehaviour
         _bossPhases.AddRange(Resources.LoadAll<BossPhase>("Phases"));
         _bossHealthBar.transform.parent.localScale = Vector3.zero;
         _maxHealth = _bossHealth;
+        _explosionParticles = _bossVisuals.transform.GetChild(6).GetComponent<ParticleSystem>();
+        _uiManager = GameObject.Find("UIManager").GetComponent<UIManager>();
 
         CheckForPhaseChange();
     }
@@ -92,7 +103,7 @@ public class BossManager : MonoBehaviour
         {
             _attackTimer += Time.deltaTime;
             if (_attackTimer >= _currentPhase._attackCooldown)
-            {                               
+            {
                 _attackTimer -= _currentPhase._attackCooldown;
                 _cooldownPeriod = false;
                 TelegraphAttack();
@@ -106,6 +117,7 @@ public class BossManager : MonoBehaviour
         // Start Animations
         _audioSource.PlayOneShot(_gameStartAudio);
         _eyesObject.SetActive(true);
+        _timeTakenToWin = Time.realtimeSinceStartup;
 
         StartCoroutine(StartGameAnimation());
     }
@@ -125,9 +137,9 @@ public class BossManager : MonoBehaviour
             {
                 _currentPhase = phase;
                 _currentAttackOrderIndex = 0;
-                if(_currentPhase._transitionFunctionName != "")
+                if (_currentPhase._transitionFunctionName != "")
                 {
-                    var method = this.GetType().GetMethod(_currentPhase._transitionFunctionName);
+                    var method = this.GetType().GetMethod(_currentPhase._transitionFunctionName, BindingFlags.Instance | BindingFlags.NonPublic);
                     method?.Invoke(this, null);
                 }
                 return true;
@@ -144,8 +156,16 @@ public class BossManager : MonoBehaviour
         _bossSparkParticles.Play();
         StopAllCoroutines();
         var hasPhaseChanged = CheckForPhaseChange();
-        StartCoroutine(TakeDamageAnimation(hasPhaseChanged));
         StartCoroutine(DisplayBossHealth());
+
+        if (_bossHealth > 0)
+        {
+            StartCoroutine(TakeDamageAnimation(hasPhaseChanged));
+        }
+        else
+        {
+            StartCoroutine(BossDefeatedAnimation());
+        }
     }
 
     public void DestroyProjectile(GameObject projectile)
@@ -157,7 +177,7 @@ public class BossManager : MonoBehaviour
     #region Attack Logic
     private void TelegraphAttack()
     {
-        BossAttack newAttack; 
+        BossAttack newAttack;
         if (_currentPhase._randomAttackOrder)
         {
             newAttack = _currentPhase._bossAttacks[Random.Range(0, _currentPhase._bossAttacks.Count)];
@@ -177,7 +197,7 @@ public class BossManager : MonoBehaviour
             AttackPlayer(newAttack);
         }
 
-        if(newAttack._telegraphAudio != null)
+        if (newAttack._telegraphAudio != null)
         {
             _audioSource.PlayOneShot(newAttack._telegraphAudio, newAttack._audioScale);
         }
@@ -211,7 +231,7 @@ public class BossManager : MonoBehaviour
         var index = _currentAttackOrderIndex;
         _currentAttackOrderIndex++;
 
-        if(_currentAttackOrderIndex >= _currentPhase._attackOrder.Count)
+        if (_currentAttackOrderIndex >= _currentPhase._attackOrder.Count)
         {
             _currentAttackOrderIndex = 0;
         }
@@ -223,6 +243,10 @@ public class BossManager : MonoBehaviour
     private void StartSweating()
     {
         _bossVisuals.transform.GetChild(4).gameObject.SetActive(true);
+    }
+    private void StopSweating()
+    {
+        _bossVisuals.transform.GetChild(4).gameObject.SetActive(false);
     }
     #endregion
     #region Animations/Interpolations
@@ -252,7 +276,7 @@ public class BossManager : MonoBehaviour
             var pingPongLerp = Mathf.PingPong(lerpTimer, 1);
             var newPosition = _bossVisuals.transform.position;
             newPosition.y = Mathf.Lerp(basePosition.y, basePosition.y + 1, pingPongLerp);
-            _bossVisuals.transform.position = newPosition; 
+            _bossVisuals.transform.position = newPosition;
             yield return null;
         }
         _bossVisuals.transform.position = basePosition;
@@ -310,12 +334,12 @@ public class BossManager : MonoBehaviour
         var positionToFallTowards = _bossVisuals.transform.position;
         var layerBitMask = 1 << 9;
         RaycastHit hit;
-        if(Physics.Raycast(_bossVisuals.transform.position, Vector3.down, out hit, 50, layerBitMask))
+        if (Physics.Raycast(_bossVisuals.transform.position, Vector3.down, out hit, 50, layerBitMask))
         {
             positionToFallTowards.y = hit.point.y + 0.75f;
         }
 
-        // TODO: Tilt the boss slightly upwards, replace eye texture with a hurt one
+        // TODO(maybe): Tilt the boss slightly upwards, replace eye texture with a hurt one
 
         // We want a small bounce at the start of the fall animation so we "start" at a later stage in the animation before falling using a sine wave
         _bossIdleAnimation.enabled = false;
@@ -326,9 +350,9 @@ public class BossManager : MonoBehaviour
         var positionLerpTimer = Mathf.InverseLerp(positionToFallTowards.y, offsetBasePosition.y, basePosition.y);
         while (Mathf.Sin(positionLerpTimer) > 0.0f)
         {
+            yield return null;
             _bossVisuals.transform.position = Vector3.Lerp(positionToFallTowards, offsetBasePosition, Mathf.Sin(positionLerpTimer));
             positionLerpTimer += (Time.deltaTime * 4);
-            yield return null;
         }
 
         // As the boss faces down the position has to go down a bit as well so it looks like it is on the floor
@@ -367,6 +391,7 @@ public class BossManager : MonoBehaviour
         _bossTrailRenderer.enabled = true;
         _stunned = false;
         _bossIdleAnimation.enabled = true;
+        _attackTimer = 0f;
 
         if (includesPhaseTransition && _gameActive)
         {
@@ -384,7 +409,7 @@ public class BossManager : MonoBehaviour
         var initialFill = _bossHealthBar.fillAmount;
         var healthAnimationTimer = 0f;
 
-        while(healthAnimationTimer <= _healthBarDisplayDuration)
+        while (healthAnimationTimer <= _healthBarDisplayDuration)
         {
             yield return null;
             healthAnimationTimer += Time.deltaTime;
@@ -430,6 +455,71 @@ public class BossManager : MonoBehaviour
         {
             FindNewPivotAngle();
         }
+    }
+
+    // Similar to TakeDamageAnimation(), but slower and with some explosions.
+    // It's technically a different animation, but with some similarities, hence the copy pasta.
+    // Separating similar code into functions when using coroutines can be a bit rough as well (Due to yields).
+    private IEnumerator BossDefeatedAnimation()
+    {
+        _timeTakenToWin = Time.realtimeSinceStartup - _timeTakenToWin;
+        _audioSource.Stop();
+
+        var positionToFallTowards = _bossVisuals.transform.position;
+        var layerBitMask = 1 << 9;
+        RaycastHit hit;
+        if (Physics.Raycast(_bossVisuals.transform.position, Vector3.down, out hit, 50, layerBitMask))
+        {
+            positionToFallTowards.y = hit.point.y + 0.75f;
+        }
+
+        _bossIdleAnimation.enabled = false;
+        var basePosition = _bossVisuals.transform.position;
+        var offsetBasePosition = basePosition;
+        offsetBasePosition.y += 1;
+        var positionLerpTimer = Mathf.InverseLerp(positionToFallTowards.y, offsetBasePosition.y, basePosition.y);
+        Explode();
+        while (Mathf.Sin(positionLerpTimer) > 0.0f)
+        {
+            yield return null;
+            _bossVisuals.transform.position = Vector3.Lerp(positionToFallTowards, offsetBasePosition, Mathf.Sin(positionLerpTimer));
+            positionLerpTimer += (Time.deltaTime * 1.5f);
+        }
+        Explode();
+        _bossVisuals.transform.LookAt(Vector3.down * 1000, Vector3.up);
+        _bossVisuals.transform.position += Vector3.down * 0.5f;
+        _audioSource.PlayOneShot(_impactSound);
+
+        yield return new WaitForSeconds(1f);
+        _bossTrailRenderer.enabled = false;
+        var oldIdleSpeed = _bossIdleAnimation._speed;
+        _bossIdleAnimation._speed *= 10;
+        _bossIdleAnimation.enabled = true;
+        yield return new WaitForSeconds(0.5f);
+        _bossIdleAnimation.enabled = false;
+        _bossIdleAnimation._speed = oldIdleSpeed;
+        yield return new WaitForSeconds(1.5f);
+        _bossSmokeParticles.Play();
+        _audioSource.PlayOneShot(_poofSound, 0.75f);
+
+        _stunned = false;
+        _bossIdleAnimation.enabled = true;
+        _attackTimer = 0f;
+
+        // The boss wants to be on the ground again once the game is done
+        _bossVisuals.transform.position += Vector3.up;
+        _eyesObject.GetComponent<MeshRenderer>().material = _happyEyesMaterial;
+        StopSweating();
+        // TODO: Victory Fanfare
+        var fullScore = _maxScore - ((int)_timeTakenToWin) - (_amountOfPlayerHits * _scoreDecreasePerHit);
+        _uiManager.DisplayScore((int)_timeTakenToWin, _amountOfPlayerHits, Mathf.Clamp(fullScore, 0, _maxScore));
+        // TODO: Display ID somehow and write score and stuff to file. ID = id.condition. 2.0 
+    }
+
+    private void Explode()
+    {
+        _audioSource.PlayOneShot(_explosionSound, 2f);
+        _explosionParticles.Play();
     }
     #endregion
 }

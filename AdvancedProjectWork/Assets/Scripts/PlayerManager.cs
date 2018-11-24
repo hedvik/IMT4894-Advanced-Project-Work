@@ -33,7 +33,6 @@ public class PlayerManager : MonoBehaviour {
     private const float _DEBUG_HEAD_SPEED = 100;
     private Vignette _vignette;
     private Coroutine _takeDamageRoutine;
-    private int _numDamageTaken = 0;
 
 
     private void Awake()
@@ -108,7 +107,7 @@ public class PlayerManager : MonoBehaviour {
 
     public void TakeDamage()
     {
-        _numDamageTaken++;
+        _bossManager._amountOfPlayerHits++;
         if(_takeDamageRoutine != null)
         {
             StopCoroutine(_takeDamageRoutine);
