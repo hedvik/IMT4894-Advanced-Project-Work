@@ -14,7 +14,7 @@ MonoBehaviour:
   _attackCooldown: 4
   _containsMovement: 1
   _movementSpeed: 0.75
-  _transitionFunctionName: StartSweating
+  _transitionFunctionName: FinalPhaseStart
   _healthThreshold: {x: 0, y: 40}
   _bossAttacks:
   - {fileID: 11400000, guid: 0002c85f7d28c98429beee35f3bf492d, type: 2}

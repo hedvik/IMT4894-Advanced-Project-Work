@@ -7,6 +7,7 @@ using Valve.VR;
 
 public class BossManager : MonoBehaviour
 {
+    public int _experimentID = 0;
     [Header("MetaInformation")]
     public GameObject _bossContainer;
     public GameObject _projectilePrefab;
@@ -21,6 +22,7 @@ public class BossManager : MonoBehaviour
     public float _timeBetweenAttackAndMovement = 0.5f;
     public int _scoreDecreasePerHit = 50;
     public int _maxScore = 1000;
+    public float _timeBeforeInattention = 20f;
 
     [Header("Audio")]
     public AudioClip _gameStartAudio;
@@ -59,6 +61,8 @@ public class BossManager : MonoBehaviour
     private int _currentAttackOrderIndex = 0;
     private ParticleSystem _explosionParticles;
     private UIManager _uiManager;
+    private GorillaManager _gorillaManager;
+    private int _participantID;
 
     private void Start()
     {
@@ -84,8 +88,8 @@ public class BossManager : MonoBehaviour
         _maxHealth = _bossHealth;
         _explosionParticles = _bossVisuals.transform.GetChild(6).GetComponent<ParticleSystem>();
         _uiManager = GameObject.Find("UIManager").GetComponent<UIManager>();
-
-        CheckForPhaseChange();
+        _gorillaManager = GameObject.Find("GorillaContainer").GetComponent<GorillaManager>();
+        FindCurrentID();
     }
 
     private void Update()
@@ -241,13 +245,14 @@ public class BossManager : MonoBehaviour
     }
     #endregion
     #region Transition Functions
-    private void StartSweating()
+    private void FinalPhaseStart()
     {
-        _bossVisuals.transform.GetChild(4).gameObject.SetActive(true);
+        SetSweatState(true);
+        _gorillaManager.RunAnimation(_timeBeforeInattention);
     }
-    private void StopSweating()
+    private void SetSweatState(bool state)
     {
-        _bossVisuals.transform.GetChild(4).gameObject.SetActive(false);
+        _bossVisuals.transform.GetChild(4).gameObject.SetActive(state);
     }
     #endregion
     #region Animations/Interpolations
@@ -460,7 +465,7 @@ public class BossManager : MonoBehaviour
 
     // Similar to TakeDamageAnimation(), but slower and with some explosions.
     // It's technically a different animation, but with some similarities, hence the copy pasta.
-    // Separating similar code into functions when using coroutines can be a bit rough as well (Due to yields).
+    // Separating similar code into functions when using coroutines can be a bit rough (Due to yields).
     private IEnumerator BossDefeatedAnimation()
     {
         _timeTakenToWin = Time.realtimeSinceStartup - _timeTakenToWin;
@@ -508,13 +513,15 @@ public class BossManager : MonoBehaviour
         _attackTimer = 0f;
 
         // The boss wants to be on the ground again once the game is done
-        _bossVisuals.transform.position += Vector3.up;
+        _bossVisuals.transform.position += Vector3.up * 1.5f;
         _eyesObject.GetComponent<MeshRenderer>().material = _happyEyesMaterial;
-        StopSweating();
+        SetSweatState(false);
         _audioSource.PlayOneShot(_fanfareSound);
         var intTimeTakenToWin = (int)_timeTakenToWin;
         var fullScore = Mathf.Clamp(_maxScore - (intTimeTakenToWin) - (_amountOfPlayerHits * _scoreDecreasePerHit), 0, _maxScore);
-        _uiManager.DisplayScore(intTimeTakenToWin, _amountOfPlayerHits, fullScore);
+        // TODO: This needs updating. The four extra variables can be calculated before write as we already have read this earlier
+        _uiManager.DisplayScore(intTimeTakenToWin, _amountOfPlayerHits, fullScore, 0, 0, 0, 0);
+        StartCoroutine(OrbitLerpRoutine(0f));
         AppendScoreToFile(intTimeTakenToWin, fullScore);
     }
 
@@ -528,10 +535,16 @@ public class BossManager : MonoBehaviour
     private void AppendScoreToFile(int timeTaken, int score)
     {
         // TODO: Write Me!
-        // TODO: ID is unique and incrementing while a 2nd column has condition ID
-        // Read File, find latest id. Current id = latest id++
-        // Tell UIManager to Display ID and Condition ID
+        // TODO: ID is unique and incrementing while a 2nd column has experiment ID
+        // Tell UIManager to Display ID and Condition/Experiment ID
         // Append results to file
+    }
+
+    private void FindCurrentID()
+    {
+        // Read File, find latest id. Current id = latest id++
+        // This should be done on startup!
+        // Read/Write using https://docs.unity3d.com/ScriptReference/Application-dataPath.html
     }
     #endregion
 }
