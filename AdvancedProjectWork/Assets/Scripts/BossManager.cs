@@ -30,6 +30,7 @@ public class BossManager : MonoBehaviour
     public AudioClip _throwSound;
     public AudioClip _phaseTransitionSound;
     public AudioClip _explosionSound;
+    public AudioClip _fanfareSound;
     private AudioSource _audioSource;
 
     [Header("UI")]
@@ -510,16 +511,27 @@ public class BossManager : MonoBehaviour
         _bossVisuals.transform.position += Vector3.up;
         _eyesObject.GetComponent<MeshRenderer>().material = _happyEyesMaterial;
         StopSweating();
-        // TODO: Victory Fanfare
-        var fullScore = _maxScore - ((int)_timeTakenToWin) - (_amountOfPlayerHits * _scoreDecreasePerHit);
-        _uiManager.DisplayScore((int)_timeTakenToWin, _amountOfPlayerHits, Mathf.Clamp(fullScore, 0, _maxScore));
-        // TODO: Display ID somehow and write score and stuff to file. ID = id.condition. 2.0 
+        _audioSource.PlayOneShot(_fanfareSound);
+        var intTimeTakenToWin = (int)_timeTakenToWin;
+        var fullScore = Mathf.Clamp(_maxScore - (intTimeTakenToWin) - (_amountOfPlayerHits * _scoreDecreasePerHit), 0, _maxScore);
+        _uiManager.DisplayScore(intTimeTakenToWin, _amountOfPlayerHits, fullScore);
+        AppendScoreToFile(intTimeTakenToWin, fullScore);
     }
 
     private void Explode()
     {
         _audioSource.PlayOneShot(_explosionSound, 2f);
         _explosionParticles.Play();
+    }
+    #endregion
+    #region Data Collection
+    private void AppendScoreToFile(int timeTaken, int score)
+    {
+        // TODO: Write Me!
+        // TODO: ID is unique and incrementing while a 2nd column has condition ID
+        // Read File, find latest id. Current id = latest id++
+        // Tell UIManager to Display ID and Condition ID
+        // Append results to file
     }
     #endregion
 }

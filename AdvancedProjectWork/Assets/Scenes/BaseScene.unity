@@ -32357,13 +32357,14 @@ MonoBehaviour:
   _scoreDecreasePerHit: 50
   _maxScore: 1000
   _gameStartAudio: {fileID: 8300000, guid: a779ba309f333ad4180721989a92ab24, type: 3}
-  _gameSoundtrack: {fileID: 0}
+  _gameSoundtrack: {fileID: 8300000, guid: d936af3e1f3abf74e868306ae9e9e20f, type: 3}
   _poofSound: {fileID: 8300000, guid: c9a56c9d8ae10c547b06aead0a3834b9, type: 3}
   _impactSound: {fileID: 8300000, guid: bda1360711787e0499427174cb0f1462, type: 3}
   _throwSound: {fileID: 8300000, guid: fe0b1f9aeb45b41b089175aeeabd5d95, type: 3}
   _phaseTransitionSound: {fileID: 8300000, guid: 357fd8e83aadfb24f9838db0c50cdc1b,
     type: 3}
   _explosionSound: {fileID: 8300000, guid: 7e26c9daf4c32483b9c2790e662d3f1b, type: 3}
+  _fanfareSound: {fileID: 8300000, guid: 52320e590bf774734a288886eba557ba, type: 3}
   _healthBarDisplayDuration: 3
   _healthBarScaleDuringDisplay:
     serializedVersion: 2
