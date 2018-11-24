@@ -46,9 +46,9 @@ public class BossManager : MonoBehaviour
     [HideInInspector] public Transform _playerHead;
     [HideInInspector] public float _timeTakenToWin = 0f;
     [HideInInspector] public int _amountOfPlayerHits = 0;
+    [HideInInspector] public bool _gameActive = false;
 
     private GameObject _playerObject;
-    private bool _gameActive = false;
     private float _attackTimer = 0f;
     private float _currentOrbitAngle = 0f;
     private bool _cooldownPeriod = true;

@@ -73,7 +73,6 @@ public class PlayerManager : MonoBehaviour {
         }
 #endif
 
-
         if (_currentCharge >= _maxBatonCharge)
         {
             if (Input.GetKeyDown(KeyCode.S) || (SteamVR.active && SteamVR_Input._default.inActions.GrabPinch.GetStateDown(_batonHand)))
@@ -117,10 +116,11 @@ public class PlayerManager : MonoBehaviour {
 
     private void Shoot()
     {
-        _batonLineRenderer.enabled = false;
-        _currentCharge = 0;
-        // Hacky way to quickly reset stuff :p
-        AddCharge(0);
+        // To allow for infinite shots until the game has started
+        if (_bossManager._gameActive)
+        {
+            ResetBaton();
+        }
         _audioSource.PlayOneShot(_attackSound);
 
         var attackEndPoint = _pointerOrigin.position + _pointerOrigin.forward * _pointerLineLength;
@@ -130,12 +130,26 @@ public class PlayerManager : MonoBehaviour {
         {
             if (hit.collider.CompareTag("Boss"))
             {
+                // To make sure that the baton resets when it hits the boss for the first time
+                if (!_bossManager._gameActive)
+                {
+                    ResetBaton();
+                }
+
                 _bossManager.TakeDamage(_shotDamage);
                 attackEndPoint = hit.point;
             }
         }
 
         StartCoroutine(ShotAnimation(attackEndPoint));
+    }
+
+    private void ResetBaton()
+    {
+        _batonLineRenderer.enabled = false;
+        _currentCharge = 0;
+        // Hacky way to quickly reset stuff :p
+        AddCharge(0);
     }
 
     private IEnumerator ShotAnimation(Vector3 endPoint)
