@@ -32537,6 +32537,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _experimentID: 2
+  _dataFileName: experimentData.csv
   _bossContainer: {fileID: 1499726203}
   _projectilePrefab: {fileID: 1247011670433890, guid: 61672abe7af4a7640ae7f4ea59ecdc18,
     type: 2}
@@ -32606,6 +32607,7 @@ MonoBehaviour:
   _playerHead: {fileID: 0}
   _timeTakenToWin: 0
   _amountOfPlayerHits: 0
+  _gameActive: 0
 --- !u!82 &988310032
 AudioSource:
   m_ObjectHideFlags: 0

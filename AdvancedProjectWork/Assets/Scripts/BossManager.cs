@@ -127,6 +127,7 @@ public class BossManager : MonoBehaviour
         _audioSource.PlayOneShot(_gameStartAudio);
         _eyesObject.SetActive(true);
         _timeTakenToWin = Time.realtimeSinceStartup;
+        _uiManager.CloseTutorials();
 
         StartCoroutine(StartGameAnimation());
     }
